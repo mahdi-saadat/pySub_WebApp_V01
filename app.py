@@ -692,8 +692,8 @@ def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
-        cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
-        cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+        cbar = plt.colorbar(contour, label='Horizontal Displacement [m]', ticks=tick_positions)
+        cbar.set_label('Horizontal Displacement [m]', fontsize=8, fontweight='bold')
         cbar.ax.yaxis.set_tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
@@ -764,8 +764,8 @@ def plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y):
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
-        cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
-        cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+        cbar = plt.colorbar(contour, label='Horizontal Strain [mm/m]', ticks=tick_positions)
+        cbar.set_label('Horizontal Strain [mm/m]', fontsize=8, fontweight='bold')
         cbar.ax.yaxis.set_tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
@@ -837,8 +837,8 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
-        cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
-        cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+        cbar = plt.colorbar(contour, label='Tilt [mm/m]', ticks=tick_positions)
+        cbar.set_label('Tilt [mm/m]', fontsize=8, fontweight='bold')
         cbar.ax.yaxis.set_tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
@@ -866,8 +866,6 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
         
     return fig
 #======================================================================================================================================================
-
-
 
 # -------------------------------------------------
 # Run model
