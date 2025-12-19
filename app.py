@@ -16,6 +16,7 @@ import ezdxf
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as mticker
+from matplotlib.colors import BoundaryNorm
 
 # -------------------------------------------------
 # Page config (ONLY ONCE, FIRST THING)
@@ -29,24 +30,34 @@ st.set_page_config(
 # Basic UI (render immediately)
 # -------------------------------------------------
 st.title("pySub – Subsidence Assessment Tool")
-st.write("App started successfully")
+st.caption("Numerical subsidence prediction for longwall mining")
 
 st.success("Modules imported successfully")
-
-st.markdown("### Enter panel and geotechnical parameters")
 
 # -------------------------------------------------
 # Inputs
 # -------------------------------------------------
-panel_width = st.number_input("Panel width (m)", 50.0, 1000.0, 270.0)
-panel_length = st.number_input("Panel length (m)", 50.0, 5000.0, 1000.0)
-depth_of_cover_input = st.number_input("Depth of cover (m)", 50.0, 1000.0, 115.0)
-extraction_thickness = st.number_input("Extraction thickness (m)", 1.0, 10.0, 4.20)
-lw_azimuth_angle = st.number_input("Longwall Panel Azimuth", 0.0, 90.0, 90.0)
-percentage_hard_rock = st.number_input("Hard Rock Percentage", 10.0, 100.0, 30.0)
+with st.sidebar:
+    st.header("Panel & Geotechnical Parameters")
+
+    panel_width = st.number_input("Panel width (m)", 50.0, 1000.0, 500.0)
+    panel_length = st.number_input("Panel length (m)", 50.0, 5000.0, 3000.0)
+    depth_of_cover_input = st.number_input("Depth of cover (m)", 50.0, 1000.0, 250.0)
+    extraction_thickness = st.number_input("Extraction thickness (m)", 1.0, 10.0, 4.20)
+    lw_azimuth_angle = st.number_input("Longwall Azimuth (deg)", 0.0, 90.0, 90.0)
+    percentage_hard_rock = st.number_input("Hard Rock (%)", 10.0, 100.0, 30.0)
+
+    st.markdown("---")
+    run_model = st.button("▶ Run Subsidence Assessment")
+    #------------------------------------------------------
+    # st.markdown("---")
+    # with st.expander("📊 Contour Customization (Vertical Displacement)"):
+    #     user_set_limits = st.checkbox("Enable manual contour limits", value=False)
+    #     interval = st.number_input("Contour interval [m]", min_value=0.01, max_value=1.0, value=0.25, step=0.05, format="%.2f")
+    #     panel_min_subsidence_input = st.number_input("Min displacement [m]", value=-2.5, step=0.1, format="%.2f")
+    #     panel_max_subsidence_input = st.number_input("Max displacement [m]", value=0.0, step=0.1, format="%.2f")
 
 #----------------------------------------------------------------- Core Subsidence Calculations
-
 
 def get_subsidence_factor(calculated_ratio, hard_rock_percentage):
     """
@@ -583,75 +594,166 @@ all_panel_min_y = [0]
 
 
 #======================================================================================================================================================
-def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
+# def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
-    # Define the center point for rotation
-    # *** FIX: Rotation center must be the bottom-left corner of the current panel's coordinate system. ***
-    # rotation_center = center#(619925.17, 7594941.26) # Commented out global placeholder
+#     # Define the center point for rotation
+#     # *** FIX: Rotation center must be the bottom-left corner of the current panel's coordinate system. ***
+#     # rotation_center = center#(619925.17, 7594941.26) # Commented out global placeholder
+
+#     for i, panel_data in enumerate(all_panels_data):
+#         X, Y, mySxy = panel_data
+        
+#         # Calculate min and max for each panel's subsidence
+#         panel_min_subsidence = round(mySxy.min(),1)
+#         panel_max_subsidence = round(mySxy.max(),1)
+#         levels = np.linspace(panel_min_subsidence, panel_max_subsidence, 2000)
+#         tick_positions = np.linspace(panel_min_subsidence, panel_max_subsidence, 10)
+
+#         # Create a new figure for each panel
+#         fig, ax = plt.subplots(figsize=(10, 5))
+
+#         # Shift X and Y by panel's min_x and min_y (This creates the global coordinates)
+#         X_shifted = X + all_panel_min_x[i]
+#         Y_shifted = Y + all_panel_min_y[i]
+        
+#         # *** The fix: Set the rotation center to the bottom-left corner of the current panel in global coordinates ***
+#         # This point is (all_panel_min_x[i], all_panel_min_y[i]) in the shifted system.
+#         rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
+
+#         # Rotate all points by lw_rotation_angle degrees
+#         # The rotation is now anchored correctly to the bottom-left corner of the panel in global coordinates.
+#         lw_rotation_angle = 90.0 - lw_azimuth_angle
+#         rotated_coords = [rotate_point((x, y), lw_rotation_angle, rotation_center) 
+#                           for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())]
+#         rotated_X = np.array([coord[0] for coord in rotated_coords]).reshape(X.shape)
+#         rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
+
+#         # Plot the subsidence contours for this panel using the custom levels
+#         contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
+#                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
+        
+#         # Add colorbar
+#         cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
+#         cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+#         cbar.ax.yaxis.set_tick_params(labelsize=8)
+#         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+#         # Set labels and title for the plot
+#         ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold')
+#         ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold')
+
+#         # Format axes
+#         ax.xaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+#         ax.xaxis.get_major_formatter().set_useOffset(False)
+#         ax.xaxis.get_major_formatter().set_scientific(False)
+#         ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+#         ax.yaxis.get_major_formatter().set_useOffset(False)
+#         ax.yaxis.get_major_formatter().set_scientific(False)
+
+#         plt.xticks(fontsize=10, rotation=45)
+#         plt.yticks(fontsize=10)
+        
+#         ax.set_xlim(-100, panel_length+100)  
+#         ax.set_ylim(-100, panel_width+100) 
+
+#         # Grid and aspect ratio
+#         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
+#         ax.set_aspect('equal')
+        
+#     return fig
+
+interval = 0.25
+def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
 
     for i, panel_data in enumerate(all_panels_data):
         X, Y, mySxy = panel_data
-        
-        # Calculate min and max for each panel's subsidence
-        panel_min_subsidence = round(mySxy.min(),1)
-        panel_max_subsidence = round(mySxy.max(),1)
-        levels = np.linspace(panel_min_subsidence, panel_max_subsidence, 2000)
-        tick_positions = np.linspace(panel_min_subsidence, panel_max_subsidence, 10)
 
-        # Create a new figure for each panel
+        # -------------------------------------------------
+        # DISCRETE LEVEL DEFINITION
+        # -------------------------------------------------
+        panel_min_subsidence = np.floor(mySxy.min() / interval) * interval
+        panel_max_subsidence = np.ceil(mySxy.max() / interval) * interval
+
+        levels = np.arange(panel_min_subsidence,
+                           panel_max_subsidence + interval,
+                           interval)
+
+        cmap = plt.get_cmap(cmap_method)
+        norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+        tick_positions = levels[::max(1, int(len(levels) / 10))]
+
+        # -------------------------------------------------
+        # FIGURE
+        # -------------------------------------------------
         fig, ax = plt.subplots(figsize=(10, 5))
 
-        # Shift X and Y by panel's min_x and min_y (This creates the global coordinates)
+        # Shift to global coordinates
         X_shifted = X + all_panel_min_x[i]
         Y_shifted = Y + all_panel_min_y[i]
-        
-        # *** The fix: Set the rotation center to the bottom-left corner of the current panel in global coordinates ***
-        # This point is (all_panel_min_x[i], all_panel_min_y[i]) in the shifted system.
+
+        # Rotation center (bottom-left of panel)
         rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
-
-        # Rotate all points by lw_rotation_angle degrees
-        # The rotation is now anchored correctly to the bottom-left corner of the panel in global coordinates.
         lw_rotation_angle = 90.0 - lw_azimuth_angle
-        rotated_coords = [rotate_point((x, y), lw_rotation_angle, rotation_center) 
-                          for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())]
-        rotated_X = np.array([coord[0] for coord in rotated_coords]).reshape(X.shape)
-        rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
 
-        # Plot the subsidence contours for this panel using the custom levels
-        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
-                              vmin=panel_min_subsidence, vmax=panel_max_subsidence)
-        
-        # Add colorbar
-        cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
+        # Rotate coordinates
+        rotated_coords = [
+            rotate_point((x, y), lw_rotation_angle, rotation_center)
+            for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())
+        ]
+
+        rotated_X = np.array([c[0] for c in rotated_coords]).reshape(X.shape)
+        rotated_Y = np.array([c[1] for c in rotated_coords]).reshape(Y.shape)
+
+        # -------------------------------------------------
+        # CONTOUR PLOT (DISCRETE)
+        # -------------------------------------------------
+        contour = ax.contourf(
+            rotated_X,
+            rotated_Y,
+            mySxy.T,
+            levels=levels,
+            cmap=cmap,
+            norm=norm,
+            alpha=contour_transparancy,
+            extend='both'
+        )
+        # -------------------------------------------------
+        # COLORBAR
+        # -------------------------------------------------
+        cbar = plt.colorbar(contour, ticks=tick_positions)
         cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
-        cbar.ax.yaxis.set_tick_params(labelsize=8)
+        cbar.ax.tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+        
+        ax.contour(X, Y, mySxy.T, colors="k", linewidths=0.4, alpha=0.6)
 
-        # Set labels and title for the plot
+
+        # -------------------------------------------------
+        # AXIS FORMATTING
+        # -------------------------------------------------
         ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold')
         ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold')
 
-        # Format axes
         ax.xaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
         ax.xaxis.get_major_formatter().set_useOffset(False)
         ax.xaxis.get_major_formatter().set_scientific(False)
+
         ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
         ax.yaxis.get_major_formatter().set_useOffset(False)
         ax.yaxis.get_major_formatter().set_scientific(False)
 
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
-        
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
 
-        # Grid and aspect ratio
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
+
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
         ax.set_aspect('equal')
-        
+
     return fig
 #======================================================================================================================================================
-
 
 def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
@@ -712,8 +814,8 @@ def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -784,8 +886,8 @@ def plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y):
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -857,8 +959,8 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -940,8 +1042,8 @@ def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_mi
         ax.set_zlabel('V(x,y) [m]', fontsize=10, fontweight='bold', labelpad=8)
 
         # ----------------- LIMITS -----------------
-        ax.set_xlim(-100, 1100)
-        ax.set_ylim(-100, 370)
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
         # ax.set_zlim(panel_min_subsidence, panel_max_subsidence)
 
         # ----------------- TICKS & FORMAT -----------------
@@ -977,74 +1079,20 @@ def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_mi
         plt.tight_layout()
     return fig
 
+
+
+
 # -------------------------------------------------
 # Run model
 # -------------------------------------------------
-if st.button("Run Subsidence Assessment"):
+# ---------------------------------
+# Run all models ONCE
+# ---------------------------------
 
+if run_model:
     with st.spinner("Running subsidence model..."):
         try:
-            # Step 2: Calculate subsidence for all panels
-            all_panels_data = []
-            for i in range(len(all_panel_widths)):
-                X, Y, Sxy = calculate_subsidence(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
-                )
-                all_panels_data.append((X, Y, Sxy))
-
-            # Step 3: Plot results
-            fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
-            st.pyplot(fig)
-            
-            all_panels_data = []
-            for i in range(len(all_panel_widths)):
-                X, Y, Sxy = calculate_horizontal_displacement(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
-                )
-                all_panels_data.append((X, Y, Sxy))
-                
-            fig = plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
-            st.pyplot(fig)
-            
-            all_panels_data = []
-            for i in range(len(all_panel_widths)):
-                X, Y, Sxy = calculate_horizontal_strain(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
-                )
-                all_panels_data.append((X, Y, Sxy))
-                
-            fig = plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y)
-            st.pyplot(fig)
-            
-            all_panels_data = []
-            for i in range(len(all_panel_widths)):
-                X, Y, Sxy = calculate_tilt(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
-                )
-                all_panels_data.append((X, Y, Sxy))
-                
-            fig = plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y)
-            st.pyplot(fig)
+            st.subheader("3D Subsidence Surface")
             
             all_panels_data = []
             for i in range(len(all_panel_widths)):
@@ -1057,10 +1105,88 @@ if st.button("Run Subsidence Assessment"):
                     depth_of_cover=depth_of_cover_input
                 )
                 all_panels_data.append((X, Y, Sxy))
+            
+            fig_3d = plot_vertical_displacement_3D(
+                all_panels_data, all_panel_min_x, all_panel_min_y
+            )
+            st.pyplot(fig_3d, use_container_width=True)
 
-            # Step 3: Plot results
-            fig = plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_min_y)
-            st.pyplot(fig)
+            st.subheader("Surface Response Parameters")
+
+            col1, col2 = st.columns(2)
+            col3, col4 = st.columns(2)
+
+            with col1:
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_subsidence(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                st.markdown("**Vertical Displacement**")
+                fig = plot_vertical_displacement(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
+                )
+                st.pyplot(fig, use_container_width=True)
+
+            with col2:
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_horizontal_displacement(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                st.markdown("**Horizontal Displacement**")
+                fig = plot_horizontal_displacement(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
+                )
+                st.pyplot(fig, use_container_width=True)
+
+            with col3:
+                st.markdown("**Horizontal Strain**")
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_horizontal_strain(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                fig = plot_horizontal_strain(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
+                )
+                st.pyplot(fig, use_container_width=True)
+
+            with col4:
+                st.markdown("**Tilt**")
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_tilt(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                fig = plot_tilt(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
+                )
+                st.pyplot(fig, use_container_width=True)
 
         except Exception as e:
             st.error(f"Error: {e}")
