@@ -649,8 +649,8 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -719,8 +719,8 @@ def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -791,8 +791,8 @@ def plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y):
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -864,8 +864,8 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
         
-        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
-        ax.set_ylim(-100, 370) 
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         # Grid and aspect ratio
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
@@ -947,8 +947,8 @@ def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_mi
         ax.set_zlabel('V(x,y) [m]', fontsize=10, fontweight='bold', labelpad=8)
 
         # ----------------- LIMITS -----------------
-        ax.set_xlim(-100, 1100)
-        ax.set_ylim(-100, 370)
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
         # ax.set_zlim(panel_min_subsidence, panel_max_subsidence)
 
         # ----------------- TICKS & FORMAT -----------------
@@ -1088,92 +1088,3 @@ if run_model:
 
         except Exception as e:
             st.error(f"Error: {e}")
-
-
-
-
-
-# if st.button("Run Subsidence Assessment"):
-
-#     with st.spinner("Running subsidence model..."):
-#         try:
-#             # Step 2: Calculate subsidence for all panels
-#             all_panels_data = []
-#             for i in range(len(all_panel_widths)):
-#                 X, Y, Sxy = calculate_subsidence(
-#                     lw_panel_id=1,
-#                     panel_width=all_panel_widths[i],
-#                     panel_length=all_panel_lengths[i],
-#                     extraction_thick=extraction_thickness,
-#                     percentage_hard_rock=percentage_hard_rock,
-#                     depth_of_cover=depth_of_cover_input
-#                 )
-#                 all_panels_data.append((X, Y, Sxy))
-
-#             # Step 3: Plot results
-#             fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
-#             st.pyplot(fig)
-            
-#             all_panels_data = []
-#             for i in range(len(all_panel_widths)):
-#                 X, Y, Sxy = calculate_horizontal_displacement(
-#                     lw_panel_id=1,
-#                     panel_width=all_panel_widths[i],
-#                     panel_length=all_panel_lengths[i],
-#                     extraction_thick=extraction_thickness,
-#                     percentage_hard_rock=percentage_hard_rock,
-#                     depth_of_cover=depth_of_cover_input
-#                 )
-#                 all_panels_data.append((X, Y, Sxy))
-                
-#             fig = plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
-#             st.pyplot(fig)
-            
-#             all_panels_data = []
-#             for i in range(len(all_panel_widths)):
-#                 X, Y, Sxy = calculate_horizontal_strain(
-#                     lw_panel_id=1,
-#                     panel_width=all_panel_widths[i],
-#                     panel_length=all_panel_lengths[i],
-#                     extraction_thick=extraction_thickness,
-#                     percentage_hard_rock=percentage_hard_rock,
-#                     depth_of_cover=depth_of_cover_input
-#                 )
-#                 all_panels_data.append((X, Y, Sxy))
-                
-#             fig = plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y)
-#             st.pyplot(fig)
-            
-#             all_panels_data = []
-#             for i in range(len(all_panel_widths)):
-#                 X, Y, Sxy = calculate_tilt(
-#                     lw_panel_id=1,
-#                     panel_width=all_panel_widths[i],
-#                     panel_length=all_panel_lengths[i],
-#                     extraction_thick=extraction_thickness,
-#                     percentage_hard_rock=percentage_hard_rock,
-#                     depth_of_cover=depth_of_cover_input
-#                 )
-#                 all_panels_data.append((X, Y, Sxy))
-                
-#             fig = plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y)
-#             st.pyplot(fig)
-            
-#             all_panels_data = []
-#             for i in range(len(all_panel_widths)):
-#                 X, Y, Sxy = calculate_subsidence(
-#                     lw_panel_id=1,
-#                     panel_width=all_panel_widths[i],
-#                     panel_length=all_panel_lengths[i],
-#                     extraction_thick=extraction_thickness,
-#                     percentage_hard_rock=percentage_hard_rock,
-#                     depth_of_cover=depth_of_cover_input
-#                 )
-#                 all_panels_data.append((X, Y, Sxy))
-
-#             # Step 3: Plot results
-#             fig = plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_min_y)
-#             st.pyplot(fig)
-
-#         except Exception as e:
-#             st.error(f"Error: {e}")
