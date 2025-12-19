@@ -49,6 +49,14 @@ with st.sidebar:
 
     st.markdown("---")
     run_model = st.button("▶ Run Subsidence Assessment")
+    #------------------------------------------------------
+    st.markdown("---")
+    with st.expander("📊 Contour Customization (Vertical Displacement)"):
+        user_set_limits = st.checkbox("Enable manual contour limits", value=False)
+        interval = st.number_input("Contour interval [m]", min_value=0.01, max_value=1.0, value=0.25, step=0.05, format="%.2f")
+        panel_min_subsidence_input = st.number_input("Min displacement [m]", value=-2.5, step=0.1, format="%.2f")
+        panel_max_subsidence_input = st.number_input("Max displacement [m]", value=0.0, step=0.1, format="%.2f")
+
 #----------------------------------------------------------------- Core Subsidence Calculations
 
 def get_subsidence_factor(calculated_ratio, hard_rock_percentage):
