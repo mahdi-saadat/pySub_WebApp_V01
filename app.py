@@ -452,20 +452,6 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
     return fig
 
 
-all_panels_data = []
-
-all_panel_widths = [panel_width]
-all_panel_lengths = [panel_length]
-for i in range(len(all_panel_widths)):
-    X, Y, Sxy = calculate_horizontal_displacement(
-        lw_panel_id=i+1,
-        panel_width=panel_width,
-        panel_length=panel_length,
-        extraction_thick=extraction_thickness,
-        percentage_hard_rock=percentage_hard_rock,
-        depth_of_cover=depth_of_cover_input
-    )
-    all_panels_data.append((X, Y, Sxy))
 
 def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
@@ -557,6 +543,19 @@ if st.button("Run Subsidence Assessment"):
             # Step 3: Plot results
             fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
             st.pyplot(fig)
+            
+            all_panels_data = []
+            for i in range(len(all_panel_widths)):
+                X, Y, Sxy = calculate_horizontal_displacement(
+                    lw_panel_id=1,
+                    panel_width=all_panel_widths[i],
+                    panel_length=all_panel_lengths[i],
+                    extraction_thick=extraction_thickness,
+                    percentage_hard_rock=percentage_hard_rock,
+                    depth_of_cover=depth_of_cover_input
+                )
+                all_panels_data.append((X, Y, Sxy))
+                
             fig = plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
             st.pyplot(fig)
 
