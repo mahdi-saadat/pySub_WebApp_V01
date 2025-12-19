@@ -660,7 +660,7 @@ all_panel_min_y = [0]
 #     return fig
 
 interval = 0.25
-def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y, ploting_panels):
+def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
 
     # ================= USER SETTINGS =================
     cmap_method = 'gist_rainbow'   # fixed matplotlib colormap
