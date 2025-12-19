@@ -34,9 +34,6 @@ st.caption("Numerical subsidence prediction for longwall mining")
 
 st.success("Modules imported successfully")
 
-#st.markdown("### Enter panel and geotechnical parameters")
-left_spacer, plot_col, control_col = st.columns([0.05, 0.70, 0.25])
-
 # -------------------------------------------------
 # Inputs
 # -------------------------------------------------
@@ -52,38 +49,6 @@ with st.sidebar:
 
     st.markdown("---")
     run_model = st.button("▶ Run Subsidence Assessment")
-
-#-----------------------------------------------------------------------------------------
-with control_col:
-    st.markdown("### 🖌️ Plot Controls")
-
-    interval = st.number_input(
-        "Contour interval (m)",
-        min_value=0.01,
-        max_value=5.0,
-        value=0.25,
-        step=0.05,
-        help="Discrete contour spacing"
-    )
-
-    x_buffer = st.number_input(
-        "X buffer (m)",
-        min_value=0,
-        max_value=1000,
-        value=100,
-        step=25,
-        help="Extra distance beyond panel length"
-    )
-
-    y_buffer = st.number_input(
-        "Y buffer (m)",
-        min_value=0,
-        max_value=1000,
-        value=100,
-        step=25,
-        help="Extra distance beyond panel width"
-    )
-
 #----------------------------------------------------------------- Core Subsidence Calculations
 
 def get_subsidence_factor(calculated_ratio, hard_rock_percentage):
@@ -1106,6 +1071,9 @@ def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_mi
         plt.tight_layout()
     return fig
 
+
+
+
 # -------------------------------------------------
 # Run model
 # -------------------------------------------------
@@ -1129,7 +1097,7 @@ if run_model:
                     depth_of_cover=depth_of_cover_input
                 )
                 all_panels_data.append((X, Y, Sxy))
-
+            
             fig_3d = plot_vertical_displacement_3D(
                 all_panels_data, all_panel_min_x, all_panel_min_y
             )
