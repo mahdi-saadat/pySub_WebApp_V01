@@ -72,8 +72,12 @@ uploaded_parts_dxf = st.file_uploader(
     type=["dxf"]
 )
 #-------------------------------------------
+
+
+
 panel_dxf_path = save_uploaded_file(uploaded_panel_dxf)
 parts_dxf_path = save_uploaded_file(uploaded_parts_dxf)
+
 
 #----------------------------------------------------------------- Core Subsidence Calculations
 
@@ -481,7 +485,40 @@ def plot_rotated_dxf_LW_lines_check(directory, angle, ax=None, line_color='k', f
 
     ax.set_aspect('equal')
 
+import io
 
+# Only process if a file is uploaded
+if uploaded_panel_dxf is not None:
+    all_panel_widths = []
+    all_panel_lengths = []
+    all_panel_min_x = []
+    all_panel_max_x = []
+    all_panel_min_y = []
+    all_panel_max_y = []
+    all_pillar_spacings = []
+
+    try:
+        # Use BytesIO to read once
+        dxf_bytes = io.BytesIO(uploaded_panel_dxf.read())
+        doc = ezdxf.readfile(dxf_bytes)
+        msp = doc.modelspace()
+        lines = list(msp.query("LINE"))
+        sorted_panels = find_panel_lines(lines)
+
+        # Calculate dimensions and pillar spacings
+        for panel in sorted_panels:
+            length, width, min_x, max_x, min_y, max_y = calculate_dimensions(panel)
+            all_panel_widths.append(width)
+            all_panel_lengths.append(length)
+            all_panel_min_x.append(min_x)
+            all_panel_max_x.append(max_x)
+            all_panel_min_y.append(min_y)
+            all_panel_max_y.append(max_y)
+
+        all_pillar_spacings = calculate_pillar_spacing(sorted_panels)
+
+    except Exception as e:
+        st.error(f"Failed to process uploaded DXF: {e}")
 #--------------------- Depth of Cover ----------------
 
 """
