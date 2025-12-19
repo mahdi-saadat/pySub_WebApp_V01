@@ -359,7 +359,7 @@ if st.button("Run Subsidence Assessment"):
             all_panels_data = []
             for i in range(len(all_panel_widths)):
                 X, Y, Sxy = calculate_subsidence(
-                    lw_panel_id=i+1,
+                    lw_panel_id=1,
                     panel_width=all_panel_widths[i],
                     panel_length=all_panel_lengths[i],
                     extraction_thick=extraction_thickness,
