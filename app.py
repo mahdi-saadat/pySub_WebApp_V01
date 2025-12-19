@@ -744,8 +744,8 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
 
-        ax.set_xlim(-100, 1100)
-        ax.set_ylim(-100, 370)
+        ax.set_xlim(-100, panel_length+100)  
+        ax.set_ylim(-100, panel_width+100) 
 
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
         ax.set_aspect('equal')
