@@ -184,6 +184,10 @@ for panel_id, gradient in gradient_dict.items():
     major_influence_radius_dict[panel_id] = major_influence_radius_list
     doc_counter +=1
 
+# --------------------------------------------------------------------------------------------------
+# Create Subsidence parameters calculation functions
+# --------------------------------------------------------------------------------------------------
+
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
                                                         # Vertical Dsipalcement
 def calculate_subsidence(lw_panel_id, panel_width, panel_length, extraction_thick, percentage_hard_rock, depth_of_cover,grid_resolution=100):
@@ -257,10 +261,10 @@ def calculate_subsidence(lw_panel_id, panel_width, panel_length, extraction_thic
     return X, Y, Sxy
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
-                                                        # Vertical Dsipalcement
+                                                        # Horizontal Dsipalcement
 
 
-subsidence_coefficient = 0.15
+horizontal_strain_coeff = 0.15
 
 def calculate_horizontal_displacement(lw_panel_id, panel_width, panel_length, extraction_thick, percentage_hard_rock, depth_of_cover,grid_resolution=100):
     global my_panel_id
@@ -318,7 +322,7 @@ def calculate_horizontal_displacement(lw_panel_id, panel_width, panel_length, ex
     for i, x in enumerate(x_values_limit):
         inflection_point_to_edge = inflection_point_array[i]
         major_influence_radius = major_influence_radius_array[i]
-        horizontal_strain_coefficient = subsidence_coefficient * major_influence_radius  # can include negative sign below
+        horizontal_strain_factor = horizontal_strain_coeff * major_influence_radius  # can include negative sign below
         
         for j, y in enumerate(y_values_limit):
             c = inflection_point_to_edge
@@ -335,13 +339,118 @@ def calculate_horizontal_displacement(lw_panel_id, panel_width, panel_length, ex
             dAdy = (s_max / R) * (np.exp(-np.pi*(c - y)**2 / R**2) - np.exp(-np.pi*(-W + c + y)**2 / R**2))
             
             # Horizontal displacement components (include negative sign for compression inside panel)
-            Uxy[i,j] = - horizontal_strain_coefficient * (A * dBdx)
-            Vxy[i,j] = - horizontal_strain_coefficient * (B * dAdy)
+            Uxy[i,j] = - horizontal_strain_factor * (A * dBdx)
+            Vxy[i,j] = - horizontal_strain_factor * (B * dAdy)
     
     # Horizontal displacement magnitude for contour plotting
     Sxy = np.sqrt(Uxy**2 + Vxy**2)
     return X, Y, Sxy
 
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                        # Horizontal strain
+                                                        
+def calculate_horizontal_strain(lw_panel_id, panel_width, panel_length, extraction_thick, percentage_hard_rock, depth_of_cover,grid_resolution=100):
+    global my_panel_id
+    my_panel_id = lw_panel_id
+    myrow = df_doc[df_doc['Panel ID'] == my_panel_id]
+    
+    #If the row exists, extract Start and End values
+    if not myrow.empty:
+        mystart = myrow['Start'].values[0]
+        myend = myrow['End'].values[0]   
+    else:
+        print(f"Panel ID {my_panel_id} not found in the dataframe.")
+    
+    average_depth_of_cover = (mystart+myend)/2
+    
+    # Define buffers
+    x_buffer = 100#0.85 * panel_length
+    y_buffer = 100#1.5 * panel_width
+    
+    # Define x and y ranges
+    global x_values_limit
+    global y_values_limit
+    x_values_limit = np.linspace(0 - x_buffer, panel_length + x_buffer, grid_resolution)
+    y_values_limit = np.linspace(0 - y_buffer, panel_width + y_buffer, grid_resolution)
+    
+
+    w_h_rat = round(panel_width / average_depth_of_cover, 1)
+    hr_percentage = percentage_hard_rock/100
+    subsidence_factor = get_subsidence_factor(w_h_rat,hr_percentage)
+    
+    # Calculate Smax, Maximum Subsidence [m]
+    s_max = round(extraction_thick * subsidence_factor, 1)
+    X, Y = np.meshgrid(x_values_limit, y_values_limit)
+    Uxy = np.zeros_like(X)  # horizontal displacement along x
+    Vxy = np.zeros_like(Y)  # horizontal displacement along y
+    Sxy = np.zeros_like(X)
+    
+    #inflection_point_list = inflection_points_dict[lw_panel_id]
+    major_influence_radius_array = major_influence_radius_dict[lw_panel_id]
+    
+    # Convert inflection points to match grid resolution
+    inflection_point_array = np.interp(
+        np.arange(global_resolution), 
+        np.linspace(0, global_resolution-1, len(inflection_points_dict[1][0])), 
+        inflection_points_dict[1][0]
+    )
+    
+    major_influence_radius_array = np.interp(
+        np.arange(global_resolution), 
+        np.linspace(0, global_resolution-1, len(major_influence_radius_dict[1][0])), 
+        major_influence_radius_dict[1][0]
+    )
+
+
+    # Compute horizontal displacement field
+    for i, x in enumerate(x_values_limit):
+        inflection_point_to_edge_conservative = inflection_point_array[i]
+        major_influence_radius = major_influence_radius_array[i]
+        horizontal_strain_factor = horizontal_strain_coeff * major_influence_radius
+        for j, y in enumerate(y_values_limit):
+            c = inflection_point_to_edge_conservative
+            R = major_influence_radius
+            W = panel_width
+            L = panel_length
+            
+            A = 0.5 * (erf(np.sqrt(np.pi)*(c - y)/R) + erf(np.sqrt(np.pi)*(-W + c + y)/R))
+            B = 0.5 * (erf(np.sqrt(np.pi)*(c - x)/R) + erf(np.sqrt(np.pi)*(-L + c + x)/R))
+            
+            dBdx = (s_max / R) * (np.exp(-np.pi*(c - x)**2 / R**2) - np.exp(-np.pi*(-L + c + x)**2 / R**2))
+            dAdy = (s_max / R) * (np.exp(-np.pi*(c - y)**2 / R**2) - np.exp(-np.pi*(-W + c + y)**2 / R**2))
+            
+            # Signed vector components
+            Uxy[i,j] = -horizontal_strain_factor * (A * dBdx)  # x-component
+            Vxy[i,j] = -horizontal_strain_factor * (B * dAdy)  # y-component
+    
+    # Define grid spacing
+    dx = x_values_limit[1] - x_values_limit[0]
+    dy = y_values_limit[1] - y_values_limit[0]
+    
+    # Compute 2D strain components
+    ex = np.gradient(Uxy, dx, axis=0) * 1e3     # du/dx
+    ey = np.gradient(Vxy, dy, axis=1) * 1e3     # dv/dy
+    
+    
+    mean = 0.5 * (ex + ey)
+    
+    """
+    #-----------------------
+    # Calculate other Strain Parameters
+    #----------------------
+    #========== Other Strain Parameters [Plot if Needed]
+    # exy_shear = 0.5 * (np.gradient(Uxy, dy, axis=1) + np.gradient(Vxy, dx, axis=0))  # shear strain
+    # rad = np.sqrt(((ex - ey) * 0.5)**2 + exy_shear**2)
+    # e1 = mean + rad   # major principal strain
+    # e2 = mean - rad   # minor principal strain
+    # effective_strain = np.sqrt(ex**2 + ey**2 + exy_shear**2)
+    # max_shear_strain = rad
+    # exy = 0.5 * (np.gradient(Uxy, dy, axis=1) + np.gradient(Vxy, dx, axis=0)) * 1e3  # Shear strain (epsilon_xy)
+    #==========
+    """
+    Sxy = mean
+
+    return X, Y, Sxy
 
 # Define global grid resolution
 global_resolution = 100  # Adjust this for finer/coarser grids
@@ -383,6 +492,13 @@ contour_transparancy = 0.85
 all_panel_min_x = [0]
 all_panel_min_y = [0]
 
+
+# -------------------------------------------------
+# Create Plot Functions
+# -------------------------------------------------
+
+
+#======================================================================================================================================================
 def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
     # Define the center point for rotation
@@ -450,7 +566,7 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         ax.set_aspect('equal')
         
     return fig
-
+#======================================================================================================================================================
 
 
 def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
@@ -520,6 +636,84 @@ def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min
         ax.set_aspect('equal')
         
     return fig
+
+
+#======================================================================================================================================================
+
+
+def plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y):
+    
+    # Define the center point for rotation
+    # *** FIX: Rotation center must be the bottom-left corner of the current panel's coordinate system. ***
+    # rotation_center = center#(619925.17, 7594941.26) # Commented out global placeholder
+
+    for i, panel_data in enumerate(all_panels_data):
+        X, Y, mySxy = panel_data
+        
+        # Calculate min and max for each panel's subsidence
+        panel_min_subsidence = round(mySxy.min(),1)
+        panel_max_subsidence = round(mySxy.max(),1)
+        levels = np.linspace(panel_min_subsidence, panel_max_subsidence, 2000)
+        tick_positions = np.linspace(panel_min_subsidence, panel_max_subsidence, 10)
+
+        # Create a new figure for each panel
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        # Shift X and Y by panel's min_x and min_y (This creates the global coordinates)
+        X_shifted = X + all_panel_min_x[i]
+        Y_shifted = Y + all_panel_min_y[i]
+        
+        # *** The fix: Set the rotation center to the bottom-left corner of the current panel in global coordinates ***
+        # This point is (all_panel_min_x[i], all_panel_min_y[i]) in the shifted system.
+        rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
+
+        # Rotate all points by lw_rotation_angle degrees
+        # The rotation is now anchored correctly to the bottom-left corner of the panel in global coordinates.
+        lw_rotation_angle = 90.0 - lw_azimuth_angle
+        rotated_coords = [rotate_point((x, y), lw_rotation_angle, rotation_center) 
+                          for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())]
+        rotated_X = np.array([coord[0] for coord in rotated_coords]).reshape(X.shape)
+        rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
+
+        # Plot the subsidence contours for this panel using the custom levels
+        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
+                              vmin=panel_min_subsidence, vmax=panel_max_subsidence)
+        
+        # Add colorbar
+        cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
+        cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+        cbar.ax.yaxis.set_tick_params(labelsize=8)
+        cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+        # Set labels and title for the plot
+        ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold')
+        ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold')
+
+        # Format axes
+        ax.xaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+        ax.xaxis.get_major_formatter().set_useOffset(False)
+        ax.xaxis.get_major_formatter().set_scientific(False)
+        ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+        ax.yaxis.get_major_formatter().set_useOffset(False)
+        ax.yaxis.get_major_formatter().set_scientific(False)
+
+        plt.xticks(fontsize=10, rotation=45)
+        plt.yticks(fontsize=10)
+        
+        ax.set_xlim(-100, 1100)  # Setting xlim based on panel boundaries
+        ax.set_ylim(-100, 370) 
+
+        # Grid and aspect ratio
+        ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
+        ax.set_aspect('equal')
+        
+    return fig
+#======================================================================================================================================================
+
+
+
+
+
 # -------------------------------------------------
 # Run model
 # -------------------------------------------------
@@ -547,6 +741,21 @@ if st.button("Run Subsidence Assessment"):
             all_panels_data = []
             for i in range(len(all_panel_widths)):
                 X, Y, Sxy = calculate_horizontal_displacement(
+                    lw_panel_id=1,
+                    panel_width=all_panel_widths[i],
+                    panel_length=all_panel_lengths[i],
+                    extraction_thick=extraction_thickness,
+                    percentage_hard_rock=percentage_hard_rock,
+                    depth_of_cover=depth_of_cover_input
+                )
+                all_panels_data.append((X, Y, Sxy))
+                
+            fig = plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
+            st.pyplot(fig)
+            
+            all_panels_data = []
+            for i in range(len(all_panel_widths)):
+                X, Y, Sxy = calculate_horizontal_strain(
                     lw_panel_id=1,
                     panel_width=all_panel_widths[i],
                     panel_length=all_panel_lengths[i],
