@@ -41,9 +41,9 @@ st.success("Modules imported successfully")
 with st.sidebar:
     st.header("Panel & Geotechnical Parameters")
 
-    panel_width = st.number_input("Panel width (m)", 50.0, 1000.0, 270.0)
-    panel_length = st.number_input("Panel length (m)", 50.0, 5000.0, 1000.0)
-    depth_of_cover_input = st.number_input("Depth of cover (m)", 50.0, 1000.0, 115.0)
+    panel_width = st.number_input("Panel width (m)", 50.0, 1000.0, 500.0)
+    panel_length = st.number_input("Panel length (m)", 50.0, 5000.0, 3000.0)
+    depth_of_cover_input = st.number_input("Depth of cover (m)", 50.0, 1000.0, 250.0)
     extraction_thickness = st.number_input("Extraction thickness (m)", 1.0, 10.0, 4.20)
     lw_azimuth_angle = st.number_input("Longwall Azimuth (deg)", 0.0, 90.0, 90.0)
     percentage_hard_rock = st.number_input("Hard Rock (%)", 10.0, 100.0, 30.0)
