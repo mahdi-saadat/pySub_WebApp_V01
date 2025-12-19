@@ -918,7 +918,7 @@ if st.button("Run Subsidence Assessment"):
                 )
                 all_panels_data.append((X, Y, Sxy))
                 
-            fig = plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
+            fig = plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y)
             st.pyplot(fig)
             
             all_panels_data = []
@@ -933,7 +933,7 @@ if st.button("Run Subsidence Assessment"):
                 )
                 all_panels_data.append((X, Y, Sxy))
                 
-            fig = plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
+            fig = plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y)
             st.pyplot(fig)
 
         except Exception as e:
