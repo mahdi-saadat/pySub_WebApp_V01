@@ -867,6 +867,116 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
     return fig
 #======================================================================================================================================================
 
+
+def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_min_y):
+
+    for i, panel_data in enumerate(all_panels_data):
+        X, Y, mySxy = panel_data
+
+        panel_min_subsidence = round(mySxy.min(), 1)
+        panel_max_subsidence = round(mySxy.max(), 1)
+
+        # ----------------- Coordinate transform -----------------
+        X_shifted = X + all_panel_min_x[i]
+        Y_shifted = Y + all_panel_min_y[i]
+        rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
+        lw_rotation_angle = 90.0 - lw_azimuth_angle
+
+        rotated_coords = [
+            rotate_point((x, y), lw_rotation_angle, rotation_center)
+            for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())
+        ]
+
+        rotated_X = np.array([c[0] for c in rotated_coords]).reshape(X.shape)
+        rotated_Y = np.array([c[1] for c in rotated_coords]).reshape(Y.shape)
+
+        Z = mySxy.T
+
+        # ----------------- FIGURE STYLE -----------------
+        fig = plt.figure(figsize=(13, 6), facecolor='#f7f7f7')
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_facecolor('#f7f7f7')
+
+        # Remove pane fills (clean look)
+        ax.xaxis.pane.fill = False
+        ax.yaxis.pane.fill = False
+        ax.zaxis.pane.fill = False
+
+
+        # ----------------- SURFACE -----------------
+        surf = ax.plot_surface(
+            rotated_X,
+            rotated_Y,
+            Z,
+            cmap='Spectral',               # perceptually uniform
+            vmin=panel_min_subsidence,
+            vmax=panel_max_subsidence,
+            linewidth=0.15,               # subtle mesh
+            edgecolor='k',
+            antialiased=True,
+            shade=True
+        )
+
+        # ----------------- GROUND PLANE (Z = 0) -----------------
+        ax.plot_surface(
+            rotated_X,
+            rotated_Y,
+            np.zeros_like(Z),
+            color='lightgrey',
+            alpha=0.15,
+            linewidth=0,
+            zorder=0
+        )
+        
+        
+
+        # ----------------- VIEW -----------------
+        ax.view_init(elev=25, azim=45)
+        ax.dist = 9  # camera distance (smaller = closer)
+
+        # ----------------- LABELS -----------------
+        ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold', labelpad=10)
+        ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold', labelpad=10)
+        ax.set_zlabel('V(x,y) [m]', fontsize=10, fontweight='bold', labelpad=8)
+
+        # ----------------- LIMITS -----------------
+        ax.set_xlim(-100, 1100)
+        ax.set_ylim(-100, 370)
+        # ax.set_zlim(panel_min_subsidence, panel_max_subsidence)
+
+        # ----------------- TICKS & FORMAT -----------------
+        for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+            axis.set_major_formatter(mticker.ScalarFormatter(useOffset=False))
+            axis.set_tick_params(labelsize=8, pad=3)
+
+        ax.zaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+        # ----------------- ASPECT -----------------
+        ax.set_box_aspect((1, 1, 0.35))  # visually pleasing exaggeration
+
+        # ----------------- COLORBAR -----------------
+        cbar = fig.colorbar(
+            surf,
+            ax=ax,
+            shrink=0.55,
+            aspect=18,
+            pad=0.08
+        )
+        cbar.set_label('Vertical Displacement [m]', fontsize=9, fontweight='bold')
+        cbar.ax.tick_params(labelsize=8)
+
+        # ----------------- TITLE -----------------
+        ax.set_title(
+            f'3D Subsidence Surface – Panel {i+1}',
+            fontsize=11,
+            fontweight='bold',
+            pad=12
+        )
+
+        # ----------------- SAVE -----------------
+        plt.tight_layout()
+    return fig
+
 # -------------------------------------------------
 # Run model
 # -------------------------------------------------
@@ -935,7 +1045,22 @@ if st.button("Run Subsidence Assessment"):
                 
             fig = plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y)
             st.pyplot(fig)
+            
+            all_panels_data = []
+            for i in range(len(all_panel_widths)):
+                X, Y, Sxy = calculate_subsidence(
+                    lw_panel_id=1,
+                    panel_width=all_panel_widths[i],
+                    panel_length=all_panel_lengths[i],
+                    extraction_thick=extraction_thickness,
+                    percentage_hard_rock=percentage_hard_rock,
+                    depth_of_cover=depth_of_cover_input
+                )
+                all_panels_data.append((X, Y, Sxy))
+
+            # Step 3: Plot results
+            fig = plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_min_y)
+            st.pyplot(fig)
 
         except Exception as e:
             st.error(f"Error: {e}")
-
