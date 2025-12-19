@@ -123,7 +123,8 @@ for index, row in df_doc.iterrows():
 # Dictionary to store inflection points with Panel ID as the key
 inflection_points_dict = {}
 #for ip, (lw_id, igrad) in zip(range(len(all_panel_widths)), gradient_dict.items()):
-for ip, (lw_id, igrad) in range(gradient_dict.items()):
+for ip, igrad in enumerate(gradient_dict.values()):
+    lw_id = 1
     inflection_points_list = []
     current_panel_id = ip + 1
     current_row = df_doc[df_doc['Panel ID'] == current_panel_id]
