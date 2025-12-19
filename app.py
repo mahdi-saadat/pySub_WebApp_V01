@@ -40,7 +40,7 @@ st.markdown("### Enter panel and geotechnical parameters")
 # -------------------------------------------------
 panel_width = st.number_input("Panel width (m)", 50.0, 1000.0, 270.0)
 panel_length = st.number_input("Panel length (m)", 50.0, 5000.0, 1000.0)
-depth_of_cover = st.number_input("Depth of cover (m)", 50.0, 1000.0, 115.0)
+depth_of_cover_input = st.number_input("Depth of cover (m)", 50.0, 1000.0, 115.0)
 extraction_thickness = st.number_input("Extraction thickness (m)", 1.0, 10.0, 4.20)
 lw_azimuth_angle = st.number_input("Longwall Panel Azimuth", 0.0, 90.0, 90.0)
 percentage_hard_rock = st.number_input("Hard Rock Percentage", 10.0, 100.0, 30.0)
@@ -164,6 +164,7 @@ ft_to_m = 0.3048   # feet to meters
 doc_counter = 0
 # Calculate beta_angle and major influence radius for each depth of cover
 for panel_id, gradient in gradient_dict.items():
+    
     major_influence_radius_list = []  # Initialize a new list for each panel ID
     # Calculate beta_angle (angle of major influence) in degrees
     gradient_ft = gradient * m_to_ft
@@ -182,7 +183,6 @@ for panel_id, gradient in gradient_dict.items():
     # Store major influence radius in the dictionary
     major_influence_radius_dict[panel_id] = major_influence_radius_list
     doc_counter +=1
-
 
 def calculate_subsidence(lw_panel_id, panel_width, panel_length, extraction_thick, percentage_hard_rock, depth_of_cover,grid_resolution=100):
     global my_panel_id
@@ -218,13 +218,27 @@ def calculate_subsidence(lw_panel_id, panel_width, panel_length, extraction_thic
     X, Y = np.meshgrid(x_values_limit, y_values_limit)
     Sxy = np.zeros_like(X)
     
-    inflection_point_list = inflection_points_dict[lw_panel_id]
+    #inflection_point_list = inflection_points_dict[lw_panel_id]
     major_influence_radius_array = major_influence_radius_dict[lw_panel_id]
+    
+    # Convert inflection points to match grid resolution
+    inflection_point_array = np.interp(
+        np.arange(global_resolution), 
+        np.linspace(0, global_resolution-1, len(inflection_points_dict[1][0])), 
+        inflection_points_dict[1][0]
+    )
+    
+    major_influence_radius_array = np.interp(
+        np.arange(global_resolution), 
+        np.linspace(0, global_resolution-1, len(major_influence_radius_dict[1][0])), 
+        major_influence_radius_dict[1][0]
+    )
+
     
     # Iterate over x and y values
     for i, x in enumerate(x_values_limit):
-        inflection_point_to_edge_conservative = inflection_point_list[0][i]
-        major_influence_radius = major_influence_radius_array[0][i]
+        inflection_point_to_edge_conservative = inflection_point_array[i]
+        major_influence_radius = major_influence_radius_array[i]
         for j, y in enumerate(y_values_limit):
             
             x = x_values_limit[i]
@@ -248,12 +262,12 @@ all_panel_widths = [panel_width]
 all_panel_lengths = [panel_length]
 for i in range(len(all_panel_widths)):
     X, Y, Sxy = calculate_subsidence(
-        lw_panel_id=1,
+        lw_panel_id=i+1,
         panel_width=panel_width,
         panel_length=panel_length,
         extraction_thick=extraction_thickness,
         percentage_hard_rock=percentage_hard_rock,
-        depth_of_cover=depth_of_cover
+        depth_of_cover=depth_of_cover_input
     )
     all_panels_data.append((X, Y, Sxy))
 
@@ -364,7 +378,7 @@ if st.button("Run Subsidence Assessment"):
                     panel_length=all_panel_lengths[i],
                     extraction_thick=extraction_thickness,
                     percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover
+                    depth_of_cover=depth_of_cover_input
                 )
                 all_panels_data.append((X, Y, Sxy))
 
