@@ -856,7 +856,7 @@ def plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y):
         rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
 
         # Plot the subsidence contours for this panel using the custom levels
-        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap='RdBu_r', alpha=contour_transparancy, 
+        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
@@ -929,7 +929,7 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
         rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
 
         # Plot the subsidence contours for this panel using the custom levels
-        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap='RdBu_r', alpha=contour_transparancy, 
+        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
