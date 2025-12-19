@@ -17,22 +17,6 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as mticker
 
-import tempfile
-
-def save_uploaded_file(uploaded_file):
-    """
-    Save a Streamlit uploaded file to a temporary folder
-    and return the file path.
-    """
-    if uploaded_file is not None:
-        temp_dir = tempfile.mkdtemp()
-        temp_path = os.path.join(temp_dir, uploaded_file.name)
-        with open(temp_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        return temp_path
-    return None
-
-
 # -------------------------------------------------
 # Page config (ONLY ONCE, FIRST THING)
 # -------------------------------------------------
@@ -60,24 +44,6 @@ depth_of_cover = st.number_input("Depth of cover (m)", 50.0, 1000.0, 115.0)
 extraction_thickness = st.number_input("Extraction thickness (m)", 1.0, 10.0, 4.20)
 lw_azimuth_angle = st.number_input("Longwall Panel Azimuth", 0.0, 90.0, 90.0)
 percentage_hard_rock = st.number_input("Hard Rock Percentage", 10.0, 100.0, 30.0)
-
-        # DXF Inputs:
-#-------------------------------------------
-uploaded_panel_dxf = st.file_uploader(
-    "Upload panel DXF",
-    type=["dxf"]
-)
-uploaded_parts_dxf = st.file_uploader(
-    "Upload Mine Plane and Structures DXF",
-    type=["dxf"]
-)
-#-------------------------------------------
-
-
-
-panel_dxf_path = save_uploaded_file(uploaded_panel_dxf)
-parts_dxf_path = save_uploaded_file(uploaded_parts_dxf)
-
 
 #----------------------------------------------------------------- Core Subsidence Calculations
 
@@ -118,403 +84,6 @@ def get_subsidence_factor(calculated_ratio, hard_rock_percentage):
     # 4. Return the value
     return df.at[closest_ratio, closest_col]
 
-#---------------------------------------------------------------------- Start DXF Analysis ---------------------------------------------------------------------
-
-# Global variables to store aggregated results
-all_panel_widths = []
-all_panel_lengths = []
-all_pillar_spacings = []
-
-def calculate_dimensions(vertices):
-    x_coords = [v[0] for v in vertices]
-    y_coords = [v[1] for v in vertices]
-    if x_coords and y_coords:
-        length = max(x_coords) - min(x_coords)
-        width = max(y_coords) - min(y_coords)
-        #print(f"✔Pane width: {width}")
-        min_x = min(x_coords)
-        max_x = max(x_coords)
-        min_y = min(y_coords)
-        max_y = max(y_coords)
-        return length, width, min_x, max_x, min_y, max_y
-    else:
-        return None, None, None, None, None, None
-
-def find_panel_lines(lines):
-    panels_temp = []
-    line_dict = defaultdict(list)
-    for line in lines:
-        p1, p2 = line.dxf.start, line.dxf.end
-        line_dict[(p1.x, p1.y)].append((p2.x, p2.y))
-        line_dict[(p2.x, p2.y)].append((p1.x, p1.y))
-    
-    visited = set()
-    for start, ends in line_dict.items():
-        if start in visited:
-            continue
-        panel = [start]
-        visited.add(start)
-        current = start
-        while len(panel) < 4:
-            for end in line_dict[current]:
-                if end not in visited:
-                    panel.append(end)
-                    visited.add(end)
-                    current = end
-                    break
-        
-        # Ensure the panel is a rectangle by checking the number of vertices
-        if len(panel) == 4:
-            panels_temp.append(panel)
-    
-    # Calculate dimensions and sort panels based on min_y
-    global sorted_panels
-    panels = [(panel, calculate_dimensions(panel)) for panel in panels_temp]
-    panels_sorted = sorted(panels, key=lambda x: x[1][4])  # Sorting by min_y
-    sorted_panels = [panel[0] for panel in panels_sorted]
-    return sorted_panels
-
-def calculate_pillar_spacing(panels):
-    min_y_values = []
-    max_y_values = []
-    for panel in panels:
-        _, _, _, _, min_y, max_y = calculate_dimensions(panel)
-        min_y_values.append(min_y)
-        max_y_values.append(max_y)
-    
-    pillar_spacings = [abs(min_y_values[i + 1] - max_y_values[i]) for i in range(len(min_y_values) - 1)]
-    
-    # Add the width of the last panel as the spacing next to it
-    if panels:
-        last_panel_width = max_y_values[-1] - min_y_values[-1]
-        pillar_spacings.append(last_panel_width)
-    
-    return pillar_spacings
-
-
-def process_dxf_files(file_path):
-    global all_panel_widths, all_panel_lengths, all_panel_min_x, all_panel_max_x, all_panel_min_y, all_panel_max_y, all_pillar_spacings
-
-    all_panel_widths = []
-    all_panel_lengths = []
-    all_panel_min_x = []
-    all_panel_max_x = []
-    all_panel_min_y = []
-    all_panel_max_y = []
-    all_pillar_spacings = []
-
-    if file_path is None:
-        return
-
-    try:
-        doc = ezdxf.readfile(file_path)
-    except IOError:
-        st.error(f"Cannot open {file_path}.")
-        return
-
-    msp = doc.modelspace()
-    lines = list(msp.query("LINE"))
-
-    panels = find_panel_lines(lines)
-    
-    for panel in panels:
-        length, width, min_x, max_x, min_y, max_y = calculate_dimensions(panel)
-        all_panel_widths.append(width)
-        all_panel_lengths.append(length)
-        all_panel_min_x.append(min_x)
-        all_panel_max_x.append(max_x)
-        all_panel_min_y.append(min_y)
-        all_panel_max_y.append(max_y)
-
-    all_pillar_spacings.extend(calculate_pillar_spacing(panels))
-
-
-# Set the directory containing DXF files
-
-# Process all DXF files in the directory
-process_dxf_files(panel_dxf_path)
-
-#---------------------------------------------------------------------- End DXF Analysis ---------------------------------------------------------------------
-
-ploting_panels = []
-def process_dxf_files(file_path):
-
-    if file_path is None:
-        return
-
-    try:
-        doc = ezdxf.readfile(file_path)
-    except IOError:
-        st.error(f"Cannot open {file_path}.")
-        return
-
-    msp = doc.modelspace()
-    lines = list(msp.query("LINE"))
-    temp_panel = find_panel_lines(lines)
-    ploting_panels.append(temp_panel)
-
-# Rotation function for panels
-def rotate_panel(panel, angle_deg, ref_point=(0, 0)):
-    """Rotate the panel's coordinates by a specified angle around a reference point."""
-    theta = np.radians(angle_deg)
-    rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],
-                                [np.sin(theta), np.cos(theta)]])
-    
-    # Translate panel coordinates to rotate around reference point
-    panel_rotated = []
-    for x, y in panel:
-        x_shifted, y_shifted = x - ref_point[0], y - ref_point[1]  # Translate to reference point
-        x_rotated, y_rotated = rotation_matrix @ np.array([x_shifted, y_shifted])
-        panel_rotated.append((x_rotated + ref_point[0], y_rotated + ref_point[1]))  # Translate back
-    
-    return panel_rotated
-
-# Function to plot panel outlines with rotation
-def plot_panels_dxf(ax, panels, angle_deg):
-    for panel in panels:
-        # Rotate the panel by the specified angle
-        rotated_panel = rotate_panel(panel, angle_deg)
-
-        # Plot the rotated panel
-        x_coords, y_coords = zip(*rotated_panel)
-        x_coords += (x_coords[0],)  # Close the polygon
-        y_coords += (y_coords[0],)
-        ax.plot(x_coords, y_coords, color='black', linewidth=1.5)
-
-#----------------------------------------------------------------------
-process_dxf_files(uploaded_panel_dxf)
-
-#------------------------------------------------------- DXF Processing for LW Geometries
-
-def rotate_point_for_LW(point, angle, center):
-    # (This function remains the same)
-    angle_rad = np.radians(angle)
-    x, y = point
-    cx, cy = center
-    x_translated = x - cx
-    y_translated = y - cy
-    x_rotated = x_translated * np.cos(angle_rad) - y_translated * np.sin(angle_rad)
-    y_rotated = x_translated * np.sin(angle_rad) + y_translated * np.cos(angle_rad)
-    x_final = x_rotated + cx
-    y_final = y_rotated + cy
-    return (x_final, y_final)
-
-def plot_rotated_dxf_LW_lines_check(directory, angle, ax=None, line_color='k'):
-    # Added line_color argument, default is 'k' (black)
-    if ax is None:
-        fig, ax = plt.subplots()
-
-    all_x_coords = []
-    all_y_coords = []
-    
-    # Pass 1: Collect all coordinates to determine the Min/Max bounds
-    for filename in os.listdir(directory):
-        if filename.endswith(".dxf"):
-            dxf_path = os.path.join(directory, filename)
-            try:
-                doc = ezdxf.readfile(dxf_path)
-            except (IOError, ezdxf.DXFStructureError) as e:
-                print(f"Skipping {dxf_path} due to error: {e}")
-                continue
-
-            msp = doc.modelspace()
-            lines = msp.query("LINE")
-
-            for line in lines:
-                all_x_coords.extend([line.dxf.start.x, line.dxf.end.x])
-                all_y_coords.extend([line.dxf.start.y, line.dxf.end.y])
-
-    # Calculate the rotation center (bottom-left corner)
-    if all_x_coords and all_y_coords:
-        center_x = min(all_x_coords)
-        center_y = min(all_y_coords)
-        rotation_center = (center_x, center_y)
-        #print(f"Rotation Center for DXF in {directory}: {rotation_center}")
-
-        # Pass 2: Plot the rotated lines
-        for filename in os.listdir(directory):
-            if filename.endswith(".dxf"):
-                dxf_path = os.path.join(directory, filename)
-                try:
-                    doc = ezdxf.readfile(dxf_path)
-                except (IOError, ezdxf.DXFStructureError) as e:
-                    continue
-
-                msp = doc.modelspace()
-                lines = msp.query("LINE")
-
-                for line in lines:
-                    start_rotated = rotate_point_for_LW((line.dxf.start.x, line.dxf.start.y), angle, rotation_center)
-                    end_rotated = rotate_point_for_LW((line.dxf.end.x, line.dxf.end.y), angle, rotation_center)
-                    
-                    # *** FIX: Use line_color variable here ***
-                    ax.plot([start_rotated[0], end_rotated[0]], 
-                            [start_rotated[1], end_rotated[1]], 
-                            color=line_color, linestyle='-', linewidth=1.5) # Increased linewidth slightly for visibility
-
-        ax.set_aspect('equal')
-    else:
-        print(f"No DXF lines found in directory: {directory}")
-
-#===================================================================================================================================================
-
-
-def rotate_point_for_LW(point, angle, center):
-    # (This function remains the same)
-    angle_rad = np.radians(angle)
-    x, y = point
-    cx, cy = center
-    x_translated = x - cx
-    y_translated = y - cy
-    x_rotated = x_translated * np.cos(angle_rad) - y_translated * np.sin(angle_rad)
-    y_rotated = x_translated * np.sin(angle_rad) + y_translated * np.cos(angle_rad)
-    x_final = x_rotated + cx
-    y_final = y_rotated + cy
-    return (x_final, y_final)
-
-def plot_rotated_dxf_LW_lines_check(directory, angle, ax=None, line_color='k', flatten_arc_segments=32):
-    if ax is None:
-        fig, ax = plt.subplots()
-
-    all_x_coords = []
-    all_y_coords = []
-    
-    def flatten_entity(entity):
-        points = []
-        dxftype = entity.dxftype()
-        
-        if dxftype == 'LINE':
-            points = [(entity.dxf.start.x, entity.dxf.start.y),
-                      (entity.dxf.end.x, entity.dxf.end.y)]
-        
-        elif dxftype == 'LWPOLYLINE':
-            # LWPOLYLINE: 2D polyline, vertices() is a method
-            points = [(pt[0], pt[1]) for pt in entity.vertices()]
-            if entity.closed:
-                points.append(points[0])
-        
-        elif dxftype == 'POLYLINE':
-            # POLYLINE: vertices is a LIST of vertex entities (not a method!)
-            # Each vertex is a DXF entity with .dxf.location (a Vec3)
-            try:
-                vertex_points = []
-                for vertex in entity.vertices:  # ← NO parentheses! It's a list
-                    loc = vertex.dxf.location
-                    vertex_points.append((float(loc.x), float(loc.y)))
-                if vertex_points:
-                    points = vertex_points
-                    # Check if closed: POLYLINE uses flags
-                    if entity.is_closed:
-                        points.append(points[0])
-            except Exception as e:
-                print(f"Warning: Failed to parse POLYLINE: {e}")
-                return []
-        
-        elif dxftype == 'ARC':
-            center = (entity.dxf.center.x, entity.dxf.center.y)
-            radius = float(entity.dxf.radius)
-            start_angle = np.radians(entity.dxf.start_angle)
-            end_angle = np.radians(entity.dxf.end_angle)
-            if end_angle < start_angle:
-                end_angle += 2 * np.pi
-            angles = np.linspace(start_angle, end_angle, flatten_arc_segments)
-            points = [(center[0] + radius * np.cos(a), center[1] + radius * np.sin(a)) for a in angles]
-        
-        elif dxftype == 'CIRCLE':
-            center = (entity.dxf.center.x, entity.dxf.center.y)
-            radius = float(entity.dxf.radius)
-            angles = np.linspace(0, 2 * np.pi, flatten_arc_segments)
-            points = [(center[0] + radius * np.cos(a), center[1] + radius * np.sin(a)) for a in angles]
-        
-        else:
-            return []  # Unsupported entity
-
-        return points
-
-    # Pass 1: Collect all coordinates
-    for filename in os.listdir(directory):
-        if filename.endswith(".dxf"):
-            dxf_path = os.path.join(directory, filename)
-            try:
-                doc = ezdxf.readfile(dxf_path)
-            except (IOError, ezdxf.DXFStructureError) as e:
-                print(f"Skipping {dxf_path} due to error: {e}")
-                continue
-
-            msp = doc.modelspace()
-            for entity in msp:
-                if entity.dxftype() in {'LINE', 'LWPOLYLINE', 'POLYLINE', 'ARC', 'CIRCLE'}:
-                    pts = flatten_entity(entity)
-                    if pts:
-                        xs, ys = zip(*pts)
-                        all_x_coords.extend(xs)
-                        all_y_coords.extend(ys)
-
-    if not (all_x_coords and all_y_coords):
-        print(f"No supported DXF entities found in directory: {directory}")
-        return
-
-    # Global rotation center (bottom-left)
-    rotation_center = (min(all_x_coords), min(all_y_coords))
-    print(f"Rotation Center for DXF in {directory}: {rotation_center}")
-
-    # Pass 2: Plot rotated geometry
-    for filename in os.listdir(directory):
-        if filename.endswith(".dxf"):
-            dxf_path = os.path.join(directory, filename)
-            try:
-                doc = ezdxf.readfile(dxf_path)
-            except (IOError, ezdxf.DXFStructureError) as e:
-                print(f"Skipping {dxf_path} during plotting: {e}")
-                continue
-
-            msp = doc.modelspace()
-            for entity in msp:
-                if entity.dxftype() not in {'LINE', 'LWPOLYLINE', 'POLYLINE', 'ARC', 'CIRCLE'}:
-                    continue
-                pts = flatten_entity(entity)
-                if not pts:
-                    continue
-                rotated_pts = [rotate_point_for_LW(p, angle, rotation_center) for p in pts]
-                x_vals, y_vals = zip(*rotated_pts)
-                ax.plot(x_vals, y_vals, color=line_color, linestyle='-', linewidth=1.0)
-
-    ax.set_aspect('equal')
-
-import io
-
-# Only process if a file is uploaded
-if uploaded_panel_dxf is not None:
-    all_panel_widths = []
-    all_panel_lengths = []
-    all_panel_min_x = []
-    all_panel_max_x = []
-    all_panel_min_y = []
-    all_panel_max_y = []
-    all_pillar_spacings = []
-
-    try:
-        # Use BytesIO to read once
-        dxf_bytes = io.BytesIO(uploaded_panel_dxf.read())
-        doc = ezdxf.readfile(dxf_bytes)
-        msp = doc.modelspace()
-        lines = list(msp.query("LINE"))
-        sorted_panels = find_panel_lines(lines)
-
-        # Calculate dimensions and pillar spacings
-        for panel in sorted_panels:
-            length, width, min_x, max_x, min_y, max_y = calculate_dimensions(panel)
-            all_panel_widths.append(width)
-            all_panel_lengths.append(length)
-            all_panel_min_x.append(min_x)
-            all_panel_max_x.append(max_x)
-            all_panel_min_y.append(min_y)
-            all_panel_max_y.append(max_y)
-
-        all_pillar_spacings = calculate_pillar_spacing(sorted_panels)
-
-    except Exception as e:
-        st.error(f"Failed to process uploaded DXF: {e}")
 #--------------------- Depth of Cover ----------------
 
 """
@@ -553,7 +122,8 @@ for index, row in df_doc.iterrows():
 
 # Dictionary to store inflection points with Panel ID as the key
 inflection_points_dict = {}
-for ip, (lw_id, igrad) in zip(range(len(all_panel_widths)), gradient_dict.items()):
+#for ip, (lw_id, igrad) in zip(range(len(all_panel_widths)), gradient_dict.items()):
+for ip, (lw_id, igrad) in range(gradient_dict.items()):
     inflection_points_list = []
     current_panel_id = ip + 1
     current_row = df_doc[df_doc['Panel ID'] == current_panel_id]
@@ -567,7 +137,7 @@ for ip, (lw_id, igrad) in zip(range(len(all_panel_widths)), gradient_dict.items(
     
     avg_doc = (mystart + myend) / 2
     
-    i_width = all_panel_widths[ip]
+    i_width = panel_width
     w_h_ratio = round(i_width / avg_doc, 1)
     #print(f"Panel width: {i_width} , Average DOC: {avg_doc}, W/H Ratio: {w_h_ratio}, Panel_id: {lw_id}, Panel_id: {ip}")
     if w_h_ratio >= 1.2:
@@ -673,11 +243,13 @@ def calculate_subsidence(lw_panel_id, panel_width, panel_length, extraction_thic
 global_resolution = 100  # Adjust this for finer/coarser grids
 all_panels_data = []
 
+all_panel_widths = [panel_width]
+all_panel_lengths = [panel_length]
 for i in range(len(all_panel_widths)):
     X, Y, Sxy = calculate_subsidence(
         lw_panel_id=i+1,
-        panel_width=all_panel_widths[i],
-        panel_length=all_panel_lengths[i],
+        panel_width=panel_width,
+        panel_length=panel_length,
         extraction_thick=extraction_thickness,
         percentage_hard_rock=percentage_hard_rock,
         depth_of_cover=depth_of_cover
@@ -704,8 +276,10 @@ def rotate_point(point, angle_degrees, center):
 cmap_method = 'gist_rainbow'
 contour_transparancy = 0.85
 
+all_panel_min_x = [0]
+all_panel_min_y = [0]
 
-def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y, ploting_panels):
+def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
     # Define the center point for rotation
     # *** FIX: Rotation center must be the bottom-left corner of the current panel's coordinate system. ***
@@ -742,9 +316,6 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         # Plot the subsidence contours for this panel using the custom levels
         contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
-
-        # Plot the panel boundaries (if needed)
-        plot_rotated_dxf_LW_lines_check(uploaded_parts_dxf, 0.0, ax)
         
         # Add colorbar
         cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
@@ -780,31 +351,26 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
 # Run model
 # -------------------------------------------------
 if st.button("Run Subsidence Assessment"):
-    if panel_dxf_path is None or parts_dxf_path is None:
-        st.error("Please upload both Panel DXF and Parts DXF files.")
-    else:
-        with st.spinner("Running subsidence model..."):
-            try:
-                # Step 1: Process DXF
-                process_dxf_files(panel_dxf_path)
 
-                # Step 2: Calculate subsidence for all panels
-                all_panels_data = []
-                for i in range(len(all_panel_widths)):
-                    X, Y, Sxy = calculate_subsidence(
-                        lw_panel_id=i+1,
-                        panel_width=all_panel_widths[i],
-                        panel_length=all_panel_lengths[i],
-                        extraction_thick=extraction_thickness,
-                        percentage_hard_rock=percentage_hard_rock,
-                        depth_of_cover=depth_of_cover
-                    )
-                    all_panels_data.append((X, Y, Sxy))
+    with st.spinner("Running subsidence model..."):
+        try:
+            # Step 2: Calculate subsidence for all panels
+            all_panels_data = []
+            for i in range(len(all_panel_widths)):
+                X, Y, Sxy = calculate_subsidence(
+                    lw_panel_id=i+1,
+                    panel_width=all_panel_widths[i],
+                    panel_length=all_panel_lengths[i],
+                    extraction_thick=extraction_thickness,
+                    percentage_hard_rock=percentage_hard_rock,
+                    depth_of_cover=depth_of_cover
+                )
+                all_panels_data.append((X, Y, Sxy))
 
-                # Step 3: Plot results
-                fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y, ploting_panels)
-                st.pyplot(fig)
+            # Step 3: Plot results
+            fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
+            st.pyplot(fig)
 
-            except Exception as e:
-                st.error(f"Error: {e}")
+        except Exception as e:
+            st.error(f"Error: {e}")
 
