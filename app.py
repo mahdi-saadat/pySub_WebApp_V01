@@ -1082,6 +1082,7 @@ def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_mi
 # ---------------------------------
 # Run all models ONCE
 # ---------------------------------
+left_spacer, plot_col, control_col = st.columns([0.05, 0.70, 0.25])
 
 if run_model:
     with st.spinner("Running subsidence model..."):
