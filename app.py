@@ -385,6 +385,8 @@ if st.button("Run Subsidence Assessment"):
             # Step 3: Plot results
             fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
             st.pyplot(fig)
+            fig = plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y)
+            st.pyplot(fig)
 
         except Exception as e:
             st.error(f"Error: {e}")
