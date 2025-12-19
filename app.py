@@ -1091,19 +1091,14 @@ def plot_vertical_displacement_3D(all_panels_data, all_panel_min_x, all_panel_mi
 # -------------------------------------------------
 # Run model
 # -------------------------------------------------
+
 if run_model:
     with st.spinner("Running subsidence model..."):
         try:
-            # -------------------------------
-            # Step 1: Calculate all parameters ONCE
-            # -------------------------------
-            all_panels_data_vd = []
-            all_panels_data_hd = []
-            all_panels_data_hs = []
-            all_panels_data_tilt = []
-
+            st.subheader("3D Subsidence Surface")
+            
+            all_panels_data = []
             for i in range(len(all_panel_widths)):
-                # Vertical displacement
                 X, Y, Sxy = calculate_subsidence(
                     lw_panel_id=1,
                     panel_width=all_panel_widths[i],
@@ -1112,220 +1107,89 @@ if run_model:
                     percentage_hard_rock=percentage_hard_rock,
                     depth_of_cover=depth_of_cover_input
                 )
-                all_panels_data_vd.append((X, Y, Sxy))
+                all_panels_data.append((X, Y, Sxy))
+            
+            fig_3d = plot_vertical_displacement_3D(
+                all_panels_data, all_panel_min_x, all_panel_min_y
+            )
+            st.pyplot(fig_3d, use_container_width=True)
 
-                # Horizontal displacement
-                X, Y, Sxy = calculate_horizontal_displacement(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
+            st.subheader("Surface Response Parameters")
+
+            col1, col2 = st.columns(2)
+            col3, col4 = st.columns(2)
+
+            with col1:
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_subsidence(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                st.markdown("**Vertical Displacement**")
+                fig = plot_vertical_displacement(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
                 )
-                all_panels_data_hd.append((X, Y, Sxy))
+                st.pyplot(fig, use_container_width=True)
 
-                # Horizontal strain
-                X, Y, Sxy = calculate_horizontal_strain(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
+            with col2:
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_horizontal_displacement(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                st.markdown("**Horizontal Displacement**")
+                fig = plot_horizontal_displacement(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
                 )
-                all_panels_data_hs.append((X, Y, Sxy))
+                st.pyplot(fig, use_container_width=True)
 
-                # Tilt
-                X, Y, Sxy = calculate_tilt(
-                    lw_panel_id=1,
-                    panel_width=all_panel_widths[i],
-                    panel_length=all_panel_lengths[i],
-                    extraction_thick=extraction_thickness,
-                    percentage_hard_rock=percentage_hard_rock,
-                    depth_of_cover=depth_of_cover_input
+            with col3:
+                st.markdown("**Horizontal Strain**")
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_horizontal_strain(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                fig = plot_horizontal_strain(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
                 )
-                all_panels_data_tilt.append((X, Y, Sxy))
+                st.pyplot(fig, use_container_width=True)
 
-            # -------------------------------
-            # Step 2: Layout - plot area and control panel
-            # -------------------------------
-            plot_col, control_col = st.columns([3, 1])
-
-            # -------------------------------
-            # Step 3: Controls (on the right)
-            # -------------------------------
-            with control_col:
-                st.markdown("### 🖌️ Plot Controls")
-
-                # Vertical Displacement limits
-                vd_min_auto = float(np.min([np.min(p[2]) for p in all_panels_data_vd]))
-                vd_max_auto = float(np.max([np.max(p[2]) for p in all_panels_data_vd]))
-                vd_min = st.number_input("Vertical Displacement Min", value=vd_min_auto, format="%.3f")
-                vd_max = st.number_input("Vertical Displacement Max", value=vd_max_auto, format="%.3f")
-
-                # Horizontal Displacement limits
-                hd_min_auto = float(np.min([np.min(p[2]) for p in all_panels_data_hd]))
-                hd_max_auto = float(np.max([np.max(p[2]) for p in all_panels_data_hd]))
-                hd_min = st.number_input("Horizontal Displacement Min", value=hd_min_auto, format="%.3f")
-                hd_max = st.number_input("Horizontal Displacement Max", value=hd_max_auto, format="%.3f")
-
-                # Horizontal Strain limits
-                hs_min_auto = float(np.min([np.min(p[2]) for p in all_panels_data_hs]))
-                hs_max_auto = float(np.max([np.max(p[2]) for p in all_panels_data_hs]))
-                hs_min = st.number_input("Horizontal Strain Min", value=hs_min_auto, format="%.3f")
-                hs_max = st.number_input("Horizontal Strain Max", value=hs_max_auto, format="%.3f")
-
-                # Tilt limits
-                tilt_min_auto = float(np.min([np.min(p[2]) for p in all_panels_data_tilt]))
-                tilt_max_auto = float(np.max([np.max(p[2]) for p in all_panels_data_tilt]))
-                tilt_min = st.number_input("Tilt Min", value=tilt_min_auto, format="%.3f")
-                tilt_max = st.number_input("Tilt Max", value=tilt_max_auto, format="%.3f")
-
-                # Contour interval
-                interval = st.number_input("Contour Interval", value=0.25, min_value=0.01, step=0.05, format="%.3f")
-
-            # -------------------------------
-            # Step 4: Plots (on the left)
-            # -------------------------------
-            with plot_col:
-                st.subheader("3D Subsidence Surface")
-                fig_3d = plot_vertical_displacement_3D(all_panels_data_vd, all_panel_min_x, all_panel_min_y)
-                st.pyplot(fig_3d, use_container_width=True)
-
-                st.subheader("Surface Response Parameters")
-                col1, col2 = st.columns(2)
-                col3, col4 = st.columns(2)
-
-                # Vertical Displacement
-                with col1:
-                    st.markdown("**Vertical Displacement**")
-                    fig = plot_vertical_displacement(all_panels_data_vd, all_panel_min_x, all_panel_min_y,
-                                                     vd_min, vd_max, interval)
-                    st.pyplot(fig, use_container_width=True)
-
-                # Horizontal Displacement
-                with col2:
-                    st.markdown("**Horizontal Displacement**")
-                    fig = plot_horizontal_displacement(all_panels_data_hd, all_panel_min_x, all_panel_min_y,
-                                                       hd_min, hd_max, interval)
-                    st.pyplot(fig, use_container_width=True)
-
-                # Horizontal Strain
-                with col3:
-                    st.markdown("**Horizontal Strain**")
-                    fig = plot_horizontal_strain(all_panels_data_hs, all_panel_min_x, all_panel_min_y,
-                                                 hs_min, hs_max, interval)
-                    st.pyplot(fig, use_container_width=True)
-
-                # Tilt
-                with col4:
-                    st.markdown("**Tilt**")
-                    fig = plot_tilt(all_panels_data_tilt, all_panel_min_x, all_panel_min_y,
-                                     tilt_min, tilt_max, interval)
-                    st.pyplot(fig, use_container_width=True)
+            with col4:
+                st.markdown("**Tilt**")
+                all_panels_data = []
+                for i in range(len(all_panel_widths)):
+                    X, Y, Sxy = calculate_tilt(
+                        lw_panel_id=1,
+                        panel_width=all_panel_widths[i],
+                        panel_length=all_panel_lengths[i],
+                        extraction_thick=extraction_thickness,
+                        percentage_hard_rock=percentage_hard_rock,
+                        depth_of_cover=depth_of_cover_input
+                    )
+                    all_panels_data.append((X, Y, Sxy))
+                fig = plot_tilt(
+                    all_panels_data, all_panel_min_x, all_panel_min_y
+                )
+                st.pyplot(fig, use_container_width=True)
 
         except Exception as e:
             st.error(f"Error: {e}")
-
-# if run_model:
-#     with st.spinner("Running subsidence model..."):
-#         try:
-#             st.subheader("3D Subsidence Surface")
-            
-#             all_panels_data = []
-#             for i in range(len(all_panel_widths)):
-#                 X, Y, Sxy = calculate_subsidence(
-#                     lw_panel_id=1,
-#                     panel_width=all_panel_widths[i],
-#                     panel_length=all_panel_lengths[i],
-#                     extraction_thick=extraction_thickness,
-#                     percentage_hard_rock=percentage_hard_rock,
-#                     depth_of_cover=depth_of_cover_input
-#                 )
-#                 all_panels_data.append((X, Y, Sxy))
-            
-#             fig_3d = plot_vertical_displacement_3D(
-#                 all_panels_data, all_panel_min_x, all_panel_min_y
-#             )
-#             st.pyplot(fig_3d, use_container_width=True)
-
-#             st.subheader("Surface Response Parameters")
-
-#             col1, col2 = st.columns(2)
-#             col3, col4 = st.columns(2)
-
-#             with col1:
-#                 all_panels_data = []
-#                 for i in range(len(all_panel_widths)):
-#                     X, Y, Sxy = calculate_subsidence(
-#                         lw_panel_id=1,
-#                         panel_width=all_panel_widths[i],
-#                         panel_length=all_panel_lengths[i],
-#                         extraction_thick=extraction_thickness,
-#                         percentage_hard_rock=percentage_hard_rock,
-#                         depth_of_cover=depth_of_cover_input
-#                     )
-#                     all_panels_data.append((X, Y, Sxy))
-#                 st.markdown("**Vertical Displacement**")
-#                 fig = plot_vertical_displacement(
-#                     all_panels_data, all_panel_min_x, all_panel_min_y
-#                 )
-#                 st.pyplot(fig, use_container_width=True)
-
-#             with col2:
-#                 all_panels_data = []
-#                 for i in range(len(all_panel_widths)):
-#                     X, Y, Sxy = calculate_horizontal_displacement(
-#                         lw_panel_id=1,
-#                         panel_width=all_panel_widths[i],
-#                         panel_length=all_panel_lengths[i],
-#                         extraction_thick=extraction_thickness,
-#                         percentage_hard_rock=percentage_hard_rock,
-#                         depth_of_cover=depth_of_cover_input
-#                     )
-#                     all_panels_data.append((X, Y, Sxy))
-#                 st.markdown("**Horizontal Displacement**")
-#                 fig = plot_horizontal_displacement(
-#                     all_panels_data, all_panel_min_x, all_panel_min_y
-#                 )
-#                 st.pyplot(fig, use_container_width=True)
-
-#             with col3:
-#                 st.markdown("**Horizontal Strain**")
-#                 all_panels_data = []
-#                 for i in range(len(all_panel_widths)):
-#                     X, Y, Sxy = calculate_horizontal_strain(
-#                         lw_panel_id=1,
-#                         panel_width=all_panel_widths[i],
-#                         panel_length=all_panel_lengths[i],
-#                         extraction_thick=extraction_thickness,
-#                         percentage_hard_rock=percentage_hard_rock,
-#                         depth_of_cover=depth_of_cover_input
-#                     )
-#                     all_panels_data.append((X, Y, Sxy))
-#                 fig = plot_horizontal_strain(
-#                     all_panels_data, all_panel_min_x, all_panel_min_y
-#                 )
-#                 st.pyplot(fig, use_container_width=True)
-
-#             with col4:
-#                 st.markdown("**Tilt**")
-#                 all_panels_data = []
-#                 for i in range(len(all_panel_widths)):
-#                     X, Y, Sxy = calculate_tilt(
-#                         lw_panel_id=1,
-#                         panel_width=all_panel_widths[i],
-#                         panel_length=all_panel_lengths[i],
-#                         extraction_thick=extraction_thickness,
-#                         percentage_hard_rock=percentage_hard_rock,
-#                         depth_of_cover=depth_of_cover_input
-#                     )
-#                     all_panels_data.append((X, Y, Sxy))
-#                 fig = plot_tilt(
-#                     all_panels_data, all_panel_min_x, all_panel_min_y
-#                 )
-#                 st.pyplot(fig, use_container_width=True)
-
-#         except Exception as e:
-#             st.error(f"Error: {e}")
