@@ -50,12 +50,13 @@ with st.sidebar:
     st.markdown("---")
     run_model = st.button("▶ Run Subsidence Assessment")
     #------------------------------------------------------
-    # st.markdown("---")
-    # with st.expander("📊 Contour Customization (Vertical Displacement)"):
-    #     user_set_limits = st.checkbox("Enable manual contour limits", value=False)
-    #     interval = st.number_input("Contour interval [m]", min_value=0.01, max_value=1.0, value=0.25, step=0.05, format="%.2f")
-    #     panel_min_subsidence_input = st.number_input("Min displacement [m]", value=-2.5, step=0.1, format="%.2f")
-    #     panel_max_subsidence_input = st.number_input("Max displacement [m]", value=0.0, step=0.1, format="%.2f")
+    st.markdown("---")
+    with st.expander("📊 Vertical Displacement Contour Customization"):
+        use_manual_limits = st.checkbox("Set custom contour levels", value=False)
+        interval_input = st.number_input("Contour interval [m]", min_value=0.01, max_value=2.0, value=0.25, step=0.05, format="%.2f")
+        # Placeholder values; actual defaults will come from data during plotting
+        panel_min_input = st.number_input("Min displacement [m]", value=0.0, step=0.1, format="%.2f")
+        panel_max_input = st.number_input("Max displacement [m]", value=0.0, step=0.1, format="%.2f")
 
 #----------------------------------------------------------------- Core Subsidence Calculations
 
@@ -662,17 +663,120 @@ all_panel_min_y = [0]
         
 #     return fig
 
-interval = 0.25
-def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
+# interval = 0.25
+# def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
 
+#     for i, panel_data in enumerate(all_panels_data):
+#         X, Y, mySxy = panel_data
+
+#         # -------------------------------------------------
+#         # DISCRETE LEVEL DEFINITION
+#         # -------------------------------------------------
+#         panel_min_subsidence = np.floor(mySxy.min() / interval) * interval
+#         panel_max_subsidence = np.ceil(mySxy.max() / interval) * interval
+
+#         levels = np.arange(panel_min_subsidence,
+#                            panel_max_subsidence + interval,
+#                            interval)
+
+#         cmap = plt.get_cmap(cmap_method)
+#         norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+#         tick_positions = levels[::max(1, int(len(levels) / 10))]
+
+#         # -------------------------------------------------
+#         # FIGURE
+#         # -------------------------------------------------
+#         fig, ax = plt.subplots(figsize=(10, 5))
+
+#         # Shift to global coordinates
+#         X_shifted = X + all_panel_min_x[i]
+#         Y_shifted = Y + all_panel_min_y[i]
+
+#         # Rotation center (bottom-left of panel)
+#         rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
+#         lw_rotation_angle = 90.0 - lw_azimuth_angle
+
+#         # Rotate coordinates
+#         rotated_coords = [
+#             rotate_point((x, y), lw_rotation_angle, rotation_center)
+#             for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())
+#         ]
+
+#         rotated_X = np.array([c[0] for c in rotated_coords]).reshape(X.shape)
+#         rotated_Y = np.array([c[1] for c in rotated_coords]).reshape(Y.shape)
+
+#         # -------------------------------------------------
+#         # CONTOUR PLOT (DISCRETE)
+#         # -------------------------------------------------
+#         contour = ax.contourf(
+#             rotated_X,
+#             rotated_Y,
+#             mySxy.T,
+#             levels=levels,
+#             cmap=cmap,
+#             norm=norm,
+#             alpha=contour_transparancy,
+#             extend='both'
+#         )
+#         # -------------------------------------------------
+#         # COLORBAR
+#         # -------------------------------------------------
+#         cbar = plt.colorbar(contour, ticks=tick_positions)
+#         cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+#         cbar.ax.tick_params(labelsize=8)
+#         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+        
+#         ax.contour(X, Y, mySxy.T, colors="k", linewidths=0.4, alpha=0.6)
+
+
+#         # -------------------------------------------------
+#         # AXIS FORMATTING
+#         # -------------------------------------------------
+#         ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold')
+#         ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold')
+
+#         ax.xaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+#         ax.xaxis.get_major_formatter().set_useOffset(False)
+#         ax.xaxis.get_major_formatter().set_scientific(False)
+
+#         ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+#         ax.yaxis.get_major_formatter().set_useOffset(False)
+#         ax.yaxis.get_major_formatter().set_scientific(False)
+
+#         plt.xticks(fontsize=10, rotation=45)
+#         plt.yticks(fontsize=10)
+
+#         ax.set_xlim(-100, panel_length+100)  
+#         ax.set_ylim(-100, panel_width+100) 
+
+#         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
+#         ax.set_aspect('equal')
+
+#     return fig
+
+def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y,
+                               use_manual_limits=False,
+                               user_min=0.0,
+                               user_max=0.0,
+                               user_interval=0.25):
     for i, panel_data in enumerate(all_panels_data):
         X, Y, mySxy = panel_data
 
         # -------------------------------------------------
-        # DISCRETE LEVEL DEFINITION
+        # DISCRETE LEVEL DEFINITION (auto or manual)
         # -------------------------------------------------
-        panel_min_subsidence = np.floor(mySxy.min() / interval) * interval
-        panel_max_subsidence = np.ceil(mySxy.max() / interval) * interval
+        auto_min = np.floor(mySxy.min() / user_interval) * user_interval
+        auto_max = np.ceil(mySxy.max() / user_interval) * user_interval
+
+        if use_manual_limits and user_min < user_max:
+            panel_min_subsidence = user_min
+            panel_max_subsidence = user_max
+            interval = user_interval
+        else:
+            panel_min_subsidence = auto_min
+            panel_max_subsidence = auto_max
+            interval = user_interval
 
         levels = np.arange(panel_min_subsidence,
                            panel_max_subsidence + interval,
@@ -680,7 +784,6 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
 
         cmap = plt.get_cmap(cmap_method)
         norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
-
         tick_positions = levels[::max(1, int(len(levels) / 10))]
 
         # -------------------------------------------------
@@ -718,6 +821,8 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
             alpha=contour_transparancy,
             extend='both'
         )
+        ax.contour(X, Y, mySxy.T, colors="k", linewidths=0.4, alpha=0.6)
+
         # -------------------------------------------------
         # COLORBAR
         # -------------------------------------------------
@@ -725,9 +830,6 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
         cbar.ax.tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        
-        ax.contour(X, Y, mySxy.T, colors="k", linewidths=0.4, alpha=0.6)
-
 
         # -------------------------------------------------
         # AXIS FORMATTING
@@ -1129,8 +1231,21 @@ if run_model:
                     )
                     all_panels_data.append((X, Y, Sxy))
                 st.markdown("**Vertical Displacement**")
+                # fig = plot_vertical_displacement(
+                #     all_panels_data, all_panel_min_x, all_panel_min_y
+                # )
+                # Get actual data range for smart defaults in UI (optional improvement)
+                all_Sxy = [panel[2] for panel in all_panels_data]
+                global_min = min(s.min() for s in all_Sxy)
+                global_max = max(s.max() for s in all_Sxy)
+                
+                # Only use user inputs if manual mode is on; otherwise, auto is used inside function
                 fig = plot_vertical_displacement(
-                    all_panels_data, all_panel_min_x, all_panel_min_y
+                    all_panels_data, all_panel_min_x, all_panel_min_y,
+                    use_manual_limits=use_manual_limits,
+                    user_min=panel_min_input,
+                    user_max=panel_max_input,
+                    user_interval=interval_input
                 )
                 st.pyplot(fig, use_container_width=True)
 
