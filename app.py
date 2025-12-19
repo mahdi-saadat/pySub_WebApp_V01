@@ -248,7 +248,7 @@ all_panel_widths = [panel_width]
 all_panel_lengths = [panel_length]
 for i in range(len(all_panel_widths)):
     X, Y, Sxy = calculate_subsidence(
-        lw_panel_id=i+1,
+        lw_panel_id=1,
         panel_width=panel_width,
         panel_length=panel_length,
         extraction_thick=extraction_thickness,
