@@ -16,6 +16,7 @@ import ezdxf
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.ticker as mticker
+from matplotlib.colors import BoundaryNorm
 
 # -------------------------------------------------
 # Page config (ONLY ONCE, FIRST THING)
@@ -590,72 +591,165 @@ all_panel_min_y = [0]
 
 
 #======================================================================================================================================================
-def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
+# def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
-    # Define the center point for rotation
-    # *** FIX: Rotation center must be the bottom-left corner of the current panel's coordinate system. ***
-    # rotation_center = center#(619925.17, 7594941.26) # Commented out global placeholder
+#     # Define the center point for rotation
+#     # *** FIX: Rotation center must be the bottom-left corner of the current panel's coordinate system. ***
+#     # rotation_center = center#(619925.17, 7594941.26) # Commented out global placeholder
+
+#     for i, panel_data in enumerate(all_panels_data):
+#         X, Y, mySxy = panel_data
+        
+#         # Calculate min and max for each panel's subsidence
+#         panel_min_subsidence = round(mySxy.min(),1)
+#         panel_max_subsidence = round(mySxy.max(),1)
+#         levels = np.linspace(panel_min_subsidence, panel_max_subsidence, 2000)
+#         tick_positions = np.linspace(panel_min_subsidence, panel_max_subsidence, 10)
+
+#         # Create a new figure for each panel
+#         fig, ax = plt.subplots(figsize=(10, 5))
+
+#         # Shift X and Y by panel's min_x and min_y (This creates the global coordinates)
+#         X_shifted = X + all_panel_min_x[i]
+#         Y_shifted = Y + all_panel_min_y[i]
+        
+#         # *** The fix: Set the rotation center to the bottom-left corner of the current panel in global coordinates ***
+#         # This point is (all_panel_min_x[i], all_panel_min_y[i]) in the shifted system.
+#         rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
+
+#         # Rotate all points by lw_rotation_angle degrees
+#         # The rotation is now anchored correctly to the bottom-left corner of the panel in global coordinates.
+#         lw_rotation_angle = 90.0 - lw_azimuth_angle
+#         rotated_coords = [rotate_point((x, y), lw_rotation_angle, rotation_center) 
+#                           for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())]
+#         rotated_X = np.array([coord[0] for coord in rotated_coords]).reshape(X.shape)
+#         rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
+
+#         # Plot the subsidence contours for this panel using the custom levels
+#         contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
+#                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
+        
+#         # Add colorbar
+#         cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
+#         cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
+#         cbar.ax.yaxis.set_tick_params(labelsize=8)
+#         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+#         # Set labels and title for the plot
+#         ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold')
+#         ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold')
+
+#         # Format axes
+#         ax.xaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+#         ax.xaxis.get_major_formatter().set_useOffset(False)
+#         ax.xaxis.get_major_formatter().set_scientific(False)
+#         ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
+#         ax.yaxis.get_major_formatter().set_useOffset(False)
+#         ax.yaxis.get_major_formatter().set_scientific(False)
+
+#         plt.xticks(fontsize=10, rotation=45)
+#         plt.yticks(fontsize=10)
+        
+#         ax.set_xlim(-100, panel_length+100)  
+#         ax.set_ylim(-100, panel_width+100) 
+
+#         # Grid and aspect ratio
+#         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
+#         ax.set_aspect('equal')
+        
+#     return fig
+
+interval = 0.25
+def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y, ploting_panels):
+
+    # ================= USER SETTINGS =================
+    cmap_method = 'gist_rainbow'   # fixed matplotlib colormap
+    # =================================================
 
     for i, panel_data in enumerate(all_panels_data):
         X, Y, mySxy = panel_data
-        
-        # Calculate min and max for each panel's subsidence
-        panel_min_subsidence = round(mySxy.min(),1)
-        panel_max_subsidence = round(mySxy.max(),1)
-        levels = np.linspace(panel_min_subsidence, panel_max_subsidence, 2000)
-        tick_positions = np.linspace(panel_min_subsidence, panel_max_subsidence, 10)
 
-        # Create a new figure for each panel
+        # -------------------------------------------------
+        # DISCRETE LEVEL DEFINITION
+        # -------------------------------------------------
+        panel_min_subsidence = np.floor(mySxy.min() / interval) * interval
+        panel_max_subsidence = np.ceil(mySxy.max() / interval) * interval
+
+        levels = np.arange(panel_min_subsidence,
+                           panel_max_subsidence + interval,
+                           interval)
+
+        cmap = plt.get_cmap(cmap_method)
+        norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+        tick_positions = levels[::max(1, int(len(levels) / 10))]
+
+        # -------------------------------------------------
+        # FIGURE
+        # -------------------------------------------------
         fig, ax = plt.subplots(figsize=(10, 5))
 
-        # Shift X and Y by panel's min_x and min_y (This creates the global coordinates)
+        # Shift to global coordinates
         X_shifted = X + all_panel_min_x[i]
         Y_shifted = Y + all_panel_min_y[i]
-        
-        # *** The fix: Set the rotation center to the bottom-left corner of the current panel in global coordinates ***
-        # This point is (all_panel_min_x[i], all_panel_min_y[i]) in the shifted system.
+
+        # Rotation center (bottom-left of panel)
         rotation_center = (all_panel_min_x[i], all_panel_min_y[i])
-
-        # Rotate all points by lw_rotation_angle degrees
-        # The rotation is now anchored correctly to the bottom-left corner of the panel in global coordinates.
         lw_rotation_angle = 90.0 - lw_azimuth_angle
-        rotated_coords = [rotate_point((x, y), lw_rotation_angle, rotation_center) 
-                          for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())]
-        rotated_X = np.array([coord[0] for coord in rotated_coords]).reshape(X.shape)
-        rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
 
-        # Plot the subsidence contours for this panel using the custom levels
-        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
-                              vmin=panel_min_subsidence, vmax=panel_max_subsidence)
-        
-        # Add colorbar
-        cbar = plt.colorbar(contour, label='Vertical Displacement [m]', ticks=tick_positions)
+        # Rotate coordinates
+        rotated_coords = [
+            rotate_point((x, y), lw_rotation_angle, rotation_center)
+            for x, y in zip(X_shifted.flatten(), Y_shifted.flatten())
+        ]
+
+        rotated_X = np.array([c[0] for c in rotated_coords]).reshape(X.shape)
+        rotated_Y = np.array([c[1] for c in rotated_coords]).reshape(Y.shape)
+
+        # -------------------------------------------------
+        # CONTOUR PLOT (DISCRETE)
+        # -------------------------------------------------
+        contour = ax.contourf(
+            rotated_X,
+            rotated_Y,
+            mySxy.T,
+            levels=levels,
+            cmap=cmap,
+            norm=norm,
+            alpha=contour_transparancy,
+            extend='both'
+        )
+        # -------------------------------------------------
+        # COLORBAR
+        # -------------------------------------------------
+        cbar = plt.colorbar(contour, ticks=tick_positions)
         cbar.set_label('Vertical Displacement [m]', fontsize=8, fontweight='bold')
-        cbar.ax.yaxis.set_tick_params(labelsize=8)
+        cbar.ax.tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-        # Set labels and title for the plot
+        # -------------------------------------------------
+        # AXIS FORMATTING
+        # -------------------------------------------------
         ax.set_xlabel('Easting [m]', fontsize=10, fontweight='bold')
         ax.set_ylabel('Northing [m]', fontsize=10, fontweight='bold')
 
-        # Format axes
         ax.xaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
         ax.xaxis.get_major_formatter().set_useOffset(False)
         ax.xaxis.get_major_formatter().set_scientific(False)
+
         ax.yaxis.set_major_formatter(mticker.ScalarFormatter(useMathText=False))
         ax.yaxis.get_major_formatter().set_useOffset(False)
         ax.yaxis.get_major_formatter().set_scientific(False)
 
         plt.xticks(fontsize=10, rotation=45)
         plt.yticks(fontsize=10)
-        
-        ax.set_xlim(-100, panel_length+100)  
-        ax.set_ylim(-100, panel_width+100) 
 
-        # Grid and aspect ratio
+        ax.set_xlim(-100, 1100)
+        ax.set_ylim(-100, 370)
+
         ax.grid(True, color='gray', linestyle='--', linewidth=0.1)
         ax.set_aspect('equal')
-        
+
     return fig
 #======================================================================================================================================================
 
