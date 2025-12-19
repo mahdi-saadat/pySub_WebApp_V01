@@ -662,10 +662,6 @@ all_panel_min_y = [0]
 interval = 0.25
 def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
 
-    # ================= USER SETTINGS =================
-    cmap_method = 'gist_rainbow'   # fixed matplotlib colormap
-    # =================================================
-
     for i, panel_data in enumerate(all_panels_data):
         X, Y, mySxy = panel_data
 
@@ -752,7 +748,6 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
 
     return fig
 #======================================================================================================================================================
-
 
 def plot_horizontal_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
     
@@ -861,7 +856,7 @@ def plot_horizontal_strain(all_panels_data, all_panel_min_x, all_panel_min_y):
         rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
 
         # Plot the subsidence contours for this panel using the custom levels
-        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
+        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap='RdBu_r', alpha=contour_transparancy, 
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
@@ -934,7 +929,7 @@ def plot_tilt(all_panels_data, all_panel_min_x, all_panel_min_y):
         rotated_Y = np.array([coord[1] for coord in rotated_coords]).reshape(Y.shape)
 
         # Plot the subsidence contours for this panel using the custom levels
-        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap=cmap_method, alpha=contour_transparancy, 
+        contour = ax.contourf(rotated_X, rotated_Y, mySxy.T, levels=levels, cmap='RdBu_r', alpha=contour_transparancy, 
                               vmin=panel_min_subsidence, vmax=panel_max_subsidence)
         
         # Add colorbar
