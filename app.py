@@ -237,25 +237,21 @@ process_dxf_files(panel_dxf_path)
 #---------------------------------------------------------------------- End DXF Analysis ---------------------------------------------------------------------
 
 ploting_panels = []
-def process_dxf_files(directory):
+def process_dxf_files(file_path):
 
-    # Loop through all DXF files in the specified directory
-    for filename in os.listdir(directory):
-            # Process panels in this DXF file
-            if filename.endswith(".dxf"):
-                dxf_path = os.path.join(directory, filename)
-                #dxf_letter = filename.split('_')[0][-1] 
-                #print(dxf_letter)
-                try:
-                    doc = ezdxf.readfile(dxf_path)
-                except IOError:
-                    print(f"Error: Cannot open {dxf_path}. Check if the file exists.")
-                    continue
+    if file_path is None:
+        return
 
-                msp = doc.modelspace()
-                lines = list(msp.query("LINE"))
-            temp_panel = find_panel_lines(lines)
-            ploting_panels.append(temp_panel)
+    try:
+        doc = ezdxf.readfile(file_path)
+    except IOError:
+        st.error(f"Cannot open {file_path}.")
+        return
+
+    msp = doc.modelspace()
+    lines = list(msp.query("LINE"))
+    temp_panel = find_panel_lines(lines)
+    ploting_panels.append(temp_panel)
 
 # Rotation function for panels
 def rotate_panel(panel, angle_deg, ref_point=(0, 0)):
