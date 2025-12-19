@@ -434,20 +434,20 @@ def calculate_horizontal_strain(lw_panel_id, panel_width, panel_length, extracti
     
     mean = 0.5 * (ex + ey)
     
-    """
-    #-----------------------
-    # Calculate other Strain Parameters
-    #----------------------
-    #========== Other Strain Parameters [Plot if Needed]
-    # exy_shear = 0.5 * (np.gradient(Uxy, dy, axis=1) + np.gradient(Vxy, dx, axis=0))  # shear strain
-    # rad = np.sqrt(((ex - ey) * 0.5)**2 + exy_shear**2)
-    # e1 = mean + rad   # major principal strain
-    # e2 = mean - rad   # minor principal strain
-    # effective_strain = np.sqrt(ex**2 + ey**2 + exy_shear**2)
-    # max_shear_strain = rad
-    # exy = 0.5 * (np.gradient(Uxy, dy, axis=1) + np.gradient(Vxy, dx, axis=0)) * 1e3  # Shear strain (epsilon_xy)
-    #==========
-    """
+    # """
+    # #-----------------------
+    # # Calculate other Strain Parameters
+    # #----------------------
+    # #========== Other Strain Parameters [Plot if Needed]
+    # # exy_shear = 0.5 * (np.gradient(Uxy, dy, axis=1) + np.gradient(Vxy, dx, axis=0))  # shear strain
+    # # rad = np.sqrt(((ex - ey) * 0.5)**2 + exy_shear**2)
+    # # e1 = mean + rad   # major principal strain
+    # # e2 = mean - rad   # minor principal strain
+    # # effective_strain = np.sqrt(ex**2 + ey**2 + exy_shear**2)
+    # # max_shear_strain = rad
+    # # exy = 0.5 * (np.gradient(Uxy, dy, axis=1) + np.gradient(Vxy, dx, axis=0)) * 1e3  # Shear strain (epsilon_xy)
+    # #==========
+    # """
     Sxy = mean
 
     return X, Y, Sxy
