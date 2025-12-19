@@ -1125,21 +1125,8 @@ if run_model:
                     )
                     all_panels_data.append((X, Y, Sxy))
                 st.markdown("**Vertical Displacement**")
-                # fig = plot_vertical_displacement(
-                #     all_panels_data, all_panel_min_x, all_panel_min_y
-                # )
-                # Get actual data range for smart defaults in UI (optional improvement)
-                all_Sxy = [panel[2] for panel in all_panels_data]
-                global_min = min(s.min() for s in all_Sxy)
-                global_max = max(s.max() for s in all_Sxy)
-                
-                # Only use user inputs if manual mode is on; otherwise, auto is used inside function
                 fig = plot_vertical_displacement(
-                    all_panels_data, all_panel_min_x, all_panel_min_y,
-                    use_manual_limits=use_manual_limits,
-                    user_min=panel_min_input,
-                    user_max=panel_max_input,
-                    user_interval=interval_input
+                    all_panels_data, all_panel_min_x, all_panel_min_y
                 )
                 st.pyplot(fig, use_container_width=True)
 
