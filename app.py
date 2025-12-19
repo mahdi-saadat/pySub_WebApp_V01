@@ -723,7 +723,7 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         cbar.ax.tick_params(labelsize=8)
         cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         
-        ax.contour(X, Y, mySxy, colors="k", linewidths=0.4, alpha=0.6)
+        ax.contour(X, Y, mySxy.T, colors="k", linewidths=0.4, alpha=0.6)
 
 
         # -------------------------------------------------
