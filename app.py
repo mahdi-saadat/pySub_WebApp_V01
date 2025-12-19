@@ -94,8 +94,8 @@ data = [
     {
         "Panel ID": 1,
         "Panel ID LW": "LW03",
-        "Start": 230,
-        "End": 130,
+        "Start": depth_of_cover_input,
+        "End": depth_of_cover_input,
         "Seam": "Seam A"
     }
 ]
