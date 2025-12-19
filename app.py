@@ -657,7 +657,9 @@ all_panel_min_y = [0]
 #     return fig
 
 interval = 0.25
-def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
+#def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y):
+def plot_vertical_displacement(all_panels_data,all_panel_min_x,all_panel_min_y,panel_min_subsidence,panel_max_subsidence,interval):
+
 
     for i, panel_data in enumerate(all_panels_data):
         X, Y, mySxy = panel_data
@@ -665,8 +667,12 @@ def plot_vertical_displacement(all_panels_data, all_panel_min_x, all_panel_min_y
         # -------------------------------------------------
         # DISCRETE LEVEL DEFINITION
         # -------------------------------------------------
-        panel_min_subsidence = np.floor(mySxy.min() / interval) * interval
-        panel_max_subsidence = np.ceil(mySxy.max() / interval) * interval
+        # panel_min_subsidence = np.floor(mySxy.min() / interval) * interval
+        # panel_max_subsidence = np.ceil(mySxy.max() / interval) * interval
+        panel_min_subsidence = np.floor(panel_min_subsidence / interval) * interval
+        panel_max_subsidence = np.ceil(panel_max_subsidence / interval) * interval
+        
+
 
         levels = np.arange(panel_min_subsidence,
                            panel_max_subsidence + interval,
@@ -1125,9 +1131,55 @@ if run_model:
                     )
                     all_panels_data.append((X, Y, Sxy))
                 st.markdown("**Vertical Displacement**")
+                
+                #--------------------------------------------------------------
+                # Right before plotting
+                plot_col, control_col = st.columns([0.75, 0.25])
+                
+                with control_col:
+                    st.markdown("### 🖌️ Vertical Displacement Controls")
+                
+                    # automatic limits from data
+                    auto_min = float(np.min(all_panels_data[0][2]))  # mySxy of panel 0
+                    auto_max = float(np.max(all_panels_data[0][2]))
+                
+                    panel_min_subsidence = st.number_input(
+                        "Minimum value (m)",
+                        value=auto_min,
+                        min_value=auto_min,
+                        max_value=auto_max,
+                        format="%.3f"
+                    )
+                
+                    panel_max_subsidence = st.number_input(
+                        "Maximum value (m)",
+                        value=auto_max,
+                        min_value=auto_min,
+                        max_value=auto_max,
+                        format="%.3f"
+                    )
+                
+                    interval = st.number_input(
+                        "Contour interval (m)",
+                        value=0.25,
+                        min_value=0.01,
+                        format="%.3f"
+                    )
+                #--------------------------------------------------------------
                 fig = plot_vertical_displacement(
-                    all_panels_data, all_panel_min_x, all_panel_min_y
+                    all_panels_data,
+                    all_panel_min_x,
+                    all_panel_min_y,
+                    panel_min_subsidence,
+                    panel_max_subsidence,
+                    interval
                 )
+                
+                
+                # fig = plot_vertical_displacement(
+                #     all_panels_data, all_panel_min_x, all_panel_min_y
+                # )
+                
                 st.pyplot(fig, use_container_width=True)
 
             with col2:
